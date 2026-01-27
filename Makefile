@@ -4,7 +4,7 @@
 
 .PHONY: help install install-frontend install-backend \
         dev dev-frontend dev-backend \
-        test test-frontend test-backend \
+        test test-all test-frontend test-backend test-integration test-watch \
         build lint clean
 
 # Default target
@@ -23,9 +23,11 @@ help:
 	@echo "  make dev-backend      - Run backend dev server (port 8000)"
 	@echo ""
 	@echo "Testing:"
-	@echo "  make test             - Run all tests (frontend + backend)"
-	@echo "  make test-frontend    - Run frontend tests"
-	@echo "  make test-backend     - Run backend tests"
+	@echo "  make test             - Run unit tests (frontend + backend)"
+	@echo "  make test-all         - Run all tests (unit + integration)"
+	@echo "  make test-frontend    - Run frontend unit tests"
+	@echo "  make test-backend     - Run backend unit tests"
+	@echo "  make test-integration - Run backend integration tests"
 	@echo "  make test-watch       - Run frontend tests in watch mode"
 	@echo ""
 	@echo "Build:"
@@ -80,13 +82,20 @@ dev-backend:
 test: test-backend test-frontend
 	@echo "✅ All tests completed"
 
+test-all: test-backend test-integration test-frontend
+	@echo "✅ All tests (unit + integration) completed"
+
 test-frontend:
 	@echo "🧪 Running frontend tests..."
 	cd frontend && npm run test
 
 test-backend:
-	@echo "🧪 Running backend tests..."
-	cd backend && uv run pytest -v
+	@echo "🧪 Running backend unit tests..."
+	cd backend && uv run pytest tests/ -v
+
+test-integration:
+	@echo "🔗 Running backend integration tests..."
+	cd backend && uv run pytest tests_integration/ -v
 
 test-watch:
 	@echo "🔄 Running frontend tests in watch mode..."
