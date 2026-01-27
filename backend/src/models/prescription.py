@@ -62,6 +62,23 @@ class PrescriptionItem(BaseModel):
 class CreatePrescriptionRequest(BaseModel):
     """Request body for creating a new prescription."""
 
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "phone_number": "+15551234567",
+                    "items": [
+                        {"text": "Take 1 blue pill every morning with food"},
+                        {"text": "Take 2 white pills at night before bed"},
+                    ],
+                    "language": "en",
+                    "timezone": "America/New_York",
+                    "recipient_name": "Grandma Rose",
+                }
+            ]
+        }
+    }
+
     phone_number: str = Field(
         ...,
         min_length=10,

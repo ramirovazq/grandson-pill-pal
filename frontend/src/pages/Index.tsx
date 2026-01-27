@@ -1,26 +1,49 @@
 import { useState } from "react";
 import PrescriptionForm from "@/components/PrescriptionForm";
+import type { PrescriptionSubmitData } from "@/components/PrescriptionForm";
 import SuccessScreen from "@/components/SuccessScreen";
 import FloatingPills from "@/components/FloatingPills";
 import SettingsBar from "@/components/SettingsBar";
 import { Pill, Heart } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useCreatePrescription } from "@/hooks/usePrescriptions";
+import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
   const [submitted, setSubmitted] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const { toast } = useToast();
+  
+  const createPrescription = useCreatePrescription();
 
-  const handleSubmit = (prescription: string, phone: string) => {
-    console.log("Prescription:", prescription);
-    console.log("Phone:", phone);
-    setPhoneNumber(phone);
-    setSubmitted(true);
+  const handleSubmit = async (data: PrescriptionSubmitData) => {
+    try {
+      await createPrescription.mutateAsync({
+        phone_number: data.phone,
+        items: data.items,
+        language: language,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      });
+      
+      setPhoneNumber(data.phone);
+      setSubmitted(true);
+    } catch (error) {
+      console.error("Failed to create prescription:", error);
+      toast({
+        title: language === "es" ? "Error" : "Error",
+        description: language === "es" 
+          ? "No se pudo crear la prescripción. Por favor intenta de nuevo."
+          : "Failed to create prescription. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleAddAnother = () => {
     setSubmitted(false);
     setPhoneNumber("");
+    createPrescription.reset();
   };
 
   return (
@@ -59,7 +82,10 @@ const Index = () => {
           {submitted ? (
             <SuccessScreen phone={phoneNumber} onAddAnother={handleAddAnother} />
           ) : (
-            <PrescriptionForm onSubmit={handleSubmit} />
+            <PrescriptionForm 
+              onSubmit={handleSubmit} 
+              isLoading={createPrescription.isPending}
+            />
           )}
         </main>
 

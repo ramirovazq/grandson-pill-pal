@@ -22,7 +22,7 @@ describe("PrescriptionForm", () => {
 
       expect(screen.getByText("Step 1 of 3")).toBeInTheDocument();
       expect(
-        screen.getByPlaceholderText(/Example: Take 1 blue pill/i)
+        screen.getByPlaceholderText(/Example:/i)
       ).toBeInTheDocument();
     });
 
@@ -38,7 +38,7 @@ describe("PrescriptionForm", () => {
     it("should enable the next button when prescription has content", async () => {
       renderWithProviders(<PrescriptionForm onSubmit={mockOnSubmit} />);
 
-      const textarea = screen.getByPlaceholderText(/Example: Take 1 blue pill/i);
+      const textarea = screen.getByPlaceholderText(/Example:/i);
       await userEvent.type(textarea, "Take 1 pill in the morning");
 
       const nextButton = screen.getByRole("button", {
@@ -50,7 +50,7 @@ describe("PrescriptionForm", () => {
     it("should proceed to validation step when next is clicked", async () => {
       renderWithProviders(<PrescriptionForm onSubmit={mockOnSubmit} />);
 
-      const textarea = screen.getByPlaceholderText(/Example: Take 1 blue pill/i);
+      const textarea = screen.getByPlaceholderText(/Example:/i);
       await userEvent.type(textarea, "Take 1 pill in the morning");
 
       const nextButton = screen.getByRole("button", {
@@ -66,7 +66,7 @@ describe("PrescriptionForm", () => {
     const goToValidationStep = async () => {
       renderWithProviders(<PrescriptionForm onSubmit={mockOnSubmit} />);
 
-      const textarea = screen.getByPlaceholderText(/Example: Take 1 blue pill/i);
+      const textarea = screen.getByPlaceholderText(/Example:/i);
       await userEvent.type(
         textarea,
         "Take 1 blue pill in the morning. Take 2 white pills at night"
@@ -171,7 +171,7 @@ describe("PrescriptionForm", () => {
       renderWithProviders(<PrescriptionForm onSubmit={mockOnSubmit} />);
 
       // Step 1: Enter prescription
-      const textarea = screen.getByPlaceholderText(/Example: Take 1 blue pill/i);
+      const textarea = screen.getByPlaceholderText(/Example:/i);
       await userEvent.type(textarea, "Take 1 pill");
 
       const nextButton1 = screen.getByRole("button", {
@@ -219,7 +219,7 @@ describe("PrescriptionForm", () => {
       expect(submitButton).toBeEnabled();
     });
 
-    it("should call onSubmit with prescription and phone when submitted", async () => {
+    it("should call onSubmit with items and phone when submitted", async () => {
       await goToPhoneStep();
 
       const phoneInput = screen.getByPlaceholderText(/\+1 \(555\) 123-4567/i);
@@ -231,7 +231,10 @@ describe("PrescriptionForm", () => {
       await userEvent.click(submitButton);
 
       expect(mockOnSubmit).toHaveBeenCalledTimes(1);
-      expect(mockOnSubmit).toHaveBeenCalledWith("Take 1 pill", "+1 555 123 4567");
+      expect(mockOnSubmit).toHaveBeenCalledWith({
+        items: [{ text: "Take 1 pill" }],
+        phone: "+1 555 123 4567",
+      });
     });
 
     it("should show validated items summary", async () => {

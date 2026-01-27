@@ -67,6 +67,19 @@ This project is built with:
 
 - Node.js >= 18.0.0 (recommended: use [nvm](https://github.com/nvm-sh/nvm) to manage versions)
 - npm
+- Backend API running (see `../backend/README.md`)
+
+### Environment Variables
+
+Copy `.env.example` to `.env` and configure:
+
+```sh
+cp .env.example .env
+```
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `VITE_API_URL` | Backend API base URL | `http://localhost:8000/api/v1` |
 
 ### Running the Development Server
 
@@ -76,6 +89,17 @@ npm install
 
 # Start the dev server with hot reload
 npm run dev
+```
+
+**Note:** Make sure the backend server is running on port 8000 for the API to work.
+
+### Running Both Frontend and Backend
+
+From the project root, you can use the Makefile:
+
+```sh
+# Run both servers in parallel
+make dev
 ```
 
 The development server will start at `http://localhost:5173` (or the next available port).

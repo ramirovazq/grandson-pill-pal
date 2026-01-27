@@ -3,11 +3,18 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Pill, Phone, Send, Sparkles, Heart, Clock, CheckCircle, Edit3, Plus, Trash2 } from "lucide-react";
+import { Pill, Phone, Send, Sparkles, Heart, Clock, CheckCircle, Edit3, Plus, Trash2, Loader2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import type { PrescriptionItemInput } from "@/api";
+
+export interface PrescriptionSubmitData {
+  items: PrescriptionItemInput[];
+  phone: string;
+}
 
 interface PrescriptionFormProps {
-  onSubmit: (prescription: string, phone: string) => void;
+  onSubmit: (data: PrescriptionSubmitData) => void | Promise<void>;
+  isLoading?: boolean;
 }
 
 interface PrescriptionItem {
@@ -16,7 +23,7 @@ interface PrescriptionItem {
   validated: boolean;
 }
 
-const PrescriptionForm = ({ onSubmit }: PrescriptionFormProps) => {
+const PrescriptionForm = ({ onSubmit, isLoading = false }: PrescriptionFormProps) => {
   const [step, setStep] = useState<"prescription" | "validate" | "phone">("prescription");
   const [prescription, setPrescription] = useState("");
   const [items, setItems] = useState<PrescriptionItem[]>([]);
@@ -70,9 +77,11 @@ const PrescriptionForm = ({ onSubmit }: PrescriptionFormProps) => {
   };
 
   const handleSubmit = () => {
-    if (phone.trim()) {
-      const validatedPrescription = items.map(item => item.text).join(". ");
-      onSubmit(validatedPrescription, phone);
+    if (phone.trim() && !isLoading) {
+      const prescriptionItems: PrescriptionItemInput[] = items.map(item => ({
+        text: item.text,
+      }));
+      onSubmit({ items: prescriptionItems, phone });
     }
   };
 
@@ -277,13 +286,22 @@ const PrescriptionForm = ({ onSubmit }: PrescriptionFormProps) => {
 
           <Button 
             onClick={handleSubmit}
-            disabled={!phone.trim()}
+            disabled={!phone.trim() || isLoading}
             size="xl"
             variant="fun"
             className="w-full"
           >
-            {t("startReminders")}
-            <Send className="w-5 h-5 ml-2" />
+            {isLoading ? (
+              <>
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                {t("sending") || "Sending..."}
+              </>
+            ) : (
+              <>
+                {t("startReminders")}
+                <Send className="w-5 h-5 ml-2" />
+              </>
+            )}
           </Button>
         </div>
       )}

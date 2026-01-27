@@ -35,7 +35,7 @@ describe("LanguageContext", () => {
         </LanguageProvider>
       );
 
-      expect(screen.getByTestId("translation").textContent).toBe("PillPal");
+      expect(screen.getByTestId("translation").textContent).toBe("Grandson Pill Pal");
       expect(screen.getByTestId("tagline").textContent).toBe(
         "Because grandma's health is no joke"
       );

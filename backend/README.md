@@ -13,6 +13,16 @@ This API provides endpoints for:
 
 The API is documented using OpenAPI 3.0 specification. See [openapi.yaml](./openapi.yaml) for the full specification.
 
+### Interactive Documentation (Swagger)
+
+When the server is running, you can access the interactive API documentation:
+
+| URL | Description |
+|-----|-------------|
+| [http://localhost:8000/api/v1/docs](http://localhost:8000/api/v1/docs) | **Swagger UI** - Interactive API explorer |
+| [http://localhost:8000/api/v1/redoc](http://localhost:8000/api/v1/redoc) | **ReDoc** - Alternative documentation viewer |
+| [http://localhost:8000/api/v1/openapi.json](http://localhost:8000/api/v1/openapi.json) | **OpenAPI JSON** - Raw specification |
+
 ### Key Endpoints
 
 | Method | Endpoint | Description |

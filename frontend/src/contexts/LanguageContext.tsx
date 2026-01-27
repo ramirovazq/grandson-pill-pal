@@ -60,6 +60,13 @@ export const translations: Translations = {
   // Settings
   language: { en: "Language", es: "Idioma" },
   theme: { en: "Theme", es: "Tema" },
+  
+  // Loading states
+  sending: { en: "Sending...", es: "Enviando..." },
+  
+  // Errors
+  errorTitle: { en: "Error", es: "Error" },
+  errorCreatePrescription: { en: "Failed to create prescription. Please try again.", es: "No se pudo crear la prescripción. Por favor intenta de nuevo." },
 };
 
 interface LanguageContextType {
