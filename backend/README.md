@@ -53,11 +53,13 @@ When the server is running, you can access the interactive API documentation:
 
 ### Database
 
-The backend uses **SQLite** with **SQLAlchemy** (async) for data persistence.
+The backend uses **SQLAlchemy** (async) for data persistence, supporting both SQLite and PostgreSQL.
 
-- **Development**: Uses file-based SQLite (`pillpal.db`)
-- **Testing**: Uses in-memory SQLite for fast, isolated tests
-- **Production**: Can be switched to PostgreSQL by changing the `DATABASE_URL`
+| Environment | Database | Connection String |
+|-------------|----------|-------------------|
+| Development | SQLite | `sqlite+aiosqlite:///./pillpal.db` |
+| Testing | SQLite (in-memory) | `sqlite+aiosqlite:///:memory:` |
+| Docker/Production | PostgreSQL | `postgresql+asyncpg://user:pass@host:5432/db` |
 
 **Database Tables:**
 - `prescriptions` - Stores prescription records
@@ -70,6 +72,7 @@ The backend uses **SQLite** with **SQLAlchemy** (async) for data persistence.
 
 - Python 3.11+
 - [uv](https://github.com/astral-sh/uv) for dependency management
+- Docker (optional, for PostgreSQL)
 
 ### Getting Started
 
@@ -77,11 +80,21 @@ The backend uses **SQLite** with **SQLAlchemy** (async) for data persistence.
 # Install dependencies
 uv sync
 
-# Run the development server
-uv run python -m uvicorn main:app --reload --port 8000
+# Run the development server (with SQLite)
+uv run uvicorn src.main:app --reload --port 8000
+```
 
-# Or run with a specific file
-uv run python <python-file>
+### Using PostgreSQL (with Docker)
+
+```bash
+# Start PostgreSQL in Docker
+make docker-dev-up
+
+# Set the DATABASE_URL environment variable
+export DATABASE_URL=postgresql+asyncpg://pillpal:pillpal_dev@localhost:5432/pillpal_dev
+
+# Run the development server
+uv run uvicorn src.main:app --reload --port 8000
 ```
 
 ### Adding Dependencies

@@ -1,0 +1,50 @@
+# Docker ignore for frontend
+# ===========================
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Test files
+src/**/*.test.ts
+src/**/*.test.tsx
+src/test/
+*.spec.ts
+*.spec.tsx
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+README.md
+*.md
+
+# Config files not needed in production
+.eslintrc*
+.prettierrc*
+tsconfig*.json
+vite.config.ts
+vitest.config.ts

@@ -15,8 +15,8 @@ class Base(DeclarativeBase):
     pass
 
 
-# Create async engine for SQLite
-# Note: For production, you would use PostgreSQL with asyncpg
+# Create async engine
+# Supports both SQLite (development) and PostgreSQL (production)
 engine = create_async_engine(
     settings.database_url,
     echo=settings.debug,
@@ -25,12 +25,14 @@ engine = create_async_engine(
 
 
 # Enable foreign key constraints for SQLite (disabled by default)
-@event.listens_for(engine.sync_engine, "connect")
-def set_sqlite_pragma(dbapi_connection, connection_record):
-    """Enable foreign key constraints for SQLite."""
-    cursor = dbapi_connection.cursor()
-    cursor.execute("PRAGMA foreign_keys=ON")
-    cursor.close()
+# Only register this listener if using SQLite
+if settings.database_url.startswith("sqlite"):
+    @event.listens_for(engine.sync_engine, "connect")
+    def set_sqlite_pragma(dbapi_connection, connection_record):
+        """Enable foreign key constraints for SQLite."""
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
 
 
 # Session factory

@@ -1,0 +1,52 @@
+# Docker Compose for Development
+# ===============================
+# Includes hot-reload and development-friendly settings
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:16-alpine
+    container_name: pillpal-db-dev
+    environment:
+      POSTGRES_USER: pillpal
+      POSTGRES_PASSWORD: pillpal_dev
+      POSTGRES_DB: pillpal_dev
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pillpal -d pillpal_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pillpal-network-dev
+
+  # FastAPI Backend (for development, run locally with uvicorn --reload)
+  # This service is optional - you can run the backend locally for hot-reload
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pillpal-backend-dev
+    environment:
+      DATABASE_URL: postgresql+asyncpg://pillpal:pillpal_dev@db:5432/pillpal_dev
+      DEBUG: "true"
+      CORS_ORIGINS: "*"
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - pillpal-network-dev
+
+volumes:
+  postgres_data_dev:
+    name: pillpal-postgres-data-dev
+
+networks:
+  pillpal-network-dev:
+    name: pillpal-network-dev
+    driver: bridge

@@ -5,7 +5,9 @@
 .PHONY: help install install-frontend install-backend \
         dev dev-frontend dev-backend \
         test test-all test-frontend test-backend test-integration test-watch \
-        build lint clean
+        build lint clean \
+        docker-up docker-down docker-build docker-logs docker-ps \
+        docker-dev-up docker-dev-down
 
 # Default target
 help:
@@ -17,10 +19,19 @@ help:
 	@echo "  make install-frontend - Install frontend dependencies"
 	@echo "  make install-backend  - Install backend dependencies"
 	@echo ""
-	@echo "Development:"
+	@echo "Development (Local):"
 	@echo "  make dev              - Run both frontend and backend dev servers"
 	@echo "  make dev-frontend     - Run frontend dev server (port 5173)"
 	@echo "  make dev-backend      - Run backend dev server (port 8000)"
+	@echo ""
+	@echo "Docker:"
+	@echo "  make docker-up        - Start all services (frontend + backend + postgres)"
+	@echo "  make docker-down      - Stop all services"
+	@echo "  make docker-build     - Build Docker images"
+	@echo "  make docker-logs      - View logs from all services"
+	@echo "  make docker-ps        - Show running containers"
+	@echo "  make docker-dev-up    - Start development database (postgres only)"
+	@echo "  make docker-dev-down  - Stop development database"
 	@echo ""
 	@echo "Testing:"
 	@echo "  make test             - Run unit tests (frontend + backend)"
@@ -39,6 +50,7 @@ help:
 	@echo ""
 	@echo "Cleanup:"
 	@echo "  make clean            - Remove build artifacts and caches"
+	@echo "  make docker-clean     - Remove Docker volumes and images"
 
 # ============================================================================
 # Installation
@@ -139,6 +151,56 @@ clean:
 	rm -rf backend/.pytest_cache
 	rm -rf backend/*.egg-info
 	@echo "✅ Cleanup complete"
+
+# ============================================================================
+# Docker
+# ============================================================================
+
+docker-up:
+	@echo "🐳 Starting all services..."
+	docker compose up -d
+	@echo ""
+	@echo "✅ Services started!"
+	@echo "   Frontend: http://localhost"
+	@echo "   Backend:  http://localhost:8000"
+	@echo "   API Docs: http://localhost:8000/api/v1/docs"
+
+docker-down:
+	@echo "🐳 Stopping all services..."
+	docker compose down
+
+docker-build:
+	@echo "🐳 Building Docker images..."
+	docker compose build
+
+docker-logs:
+	docker compose logs -f
+
+docker-ps:
+	docker compose ps
+
+docker-dev-up:
+	@echo "🐳 Starting development database..."
+	docker compose -f docker-compose.dev.yml up -d db
+	@echo ""
+	@echo "✅ PostgreSQL started!"
+	@echo "   Host: localhost:5432"
+	@echo "   User: pillpal"
+	@echo "   Pass: pillpal_dev"
+	@echo "   DB:   pillpal_dev"
+	@echo ""
+	@echo "Connection string for backend:"
+	@echo "   DATABASE_URL=postgresql+asyncpg://pillpal:pillpal_dev@localhost:5432/pillpal_dev"
+
+docker-dev-down:
+	@echo "🐳 Stopping development database..."
+	docker compose -f docker-compose.dev.yml down
+
+docker-clean:
+	@echo "🐳 Cleaning Docker resources..."
+	docker compose down -v --rmi local
+	docker compose -f docker-compose.dev.yml down -v
+	@echo "✅ Docker cleanup complete"
 
 # ============================================================================
 # Additional Utilities

@@ -20,13 +20,25 @@ class Settings(BaseSettings):
     api_host: str = "0.0.0.0"
     api_port: int = 8000
 
+    # CORS settings
+    cors_origins: str = "*"  # Comma-separated list or "*" for all
+
     # Database settings
+    # For SQLite (development): sqlite+aiosqlite:///./pillpal.db
+    # For PostgreSQL (production): postgresql+asyncpg://user:pass@host:port/dbname
     database_url: str = "sqlite+aiosqlite:///./pillpal.db"
 
     # Twilio settings (for future use)
     twilio_account_sid: str = ""
     twilio_auth_token: str = ""
     twilio_phone_number: str = ""
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        """Parse CORS origins into a list."""
+        if self.cors_origins == "*":
+            return ["*"]
+        return [origin.strip() for origin in self.cors_origins.split(",")]
 
 
 settings = Settings()
