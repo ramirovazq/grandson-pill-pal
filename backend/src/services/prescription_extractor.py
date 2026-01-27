@@ -11,6 +11,7 @@ import os
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from openai import OpenAI
 from pydantic import BaseModel, Field
 
@@ -184,6 +185,22 @@ app = FastAPI(
     title="Prescription Extractor Service",
     description="Microservice to extract structured data from prescription text using AI",
     version="1.0.0",
+)
+
+# CORS configuration
+# Allow requests from frontend dev server and production
+cors_origins = os.getenv("CORS_ORIGINS", "*")
+if cors_origins == "*":
+    origins = ["*"]
+else:
+    origins = [origin.strip() for origin in cors_origins.split(",")]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Global service instance (lazy initialized)

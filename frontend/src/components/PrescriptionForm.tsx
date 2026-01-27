@@ -18,10 +18,13 @@ import {
   Loader2,
   AlertTriangle,
   Utensils,
-  Stethoscope
+  Stethoscope,
+  Bug,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { extractPrescription, type ExtractedItem } from "@/api";
+import { extractPrescription, type ExtractedItem, type ExtractionResponse } from "@/api";
 import type { PrescriptionItemInput } from "@/api";
 
 export interface PrescriptionSubmitData {
@@ -32,6 +35,7 @@ export interface PrescriptionSubmitData {
 interface PrescriptionFormProps {
   onSubmit: (data: PrescriptionSubmitData) => void | Promise<void>;
   isLoading?: boolean;
+  showDebug?: boolean;
 }
 
 interface ValidatedItem extends ExtractedItem {
@@ -39,23 +43,29 @@ interface ValidatedItem extends ExtractedItem {
   validated: boolean;
 }
 
-const PrescriptionForm = ({ onSubmit, isLoading = false }: PrescriptionFormProps) => {
+const PrescriptionForm = ({ onSubmit, isLoading = false, showDebug = true }: PrescriptionFormProps) => {
   const [step, setStep] = useState<"prescription" | "extracting" | "validate" | "phone">("prescription");
   const [prescription, setPrescription] = useState("");
   const [items, setItems] = useState<ValidatedItem[]>([]);
   const [phone, setPhone] = useState("");
   const [newItem, setNewItem] = useState("");
   const [extractionError, setExtractionError] = useState<string | null>(null);
+  const [debugResponse, setDebugResponse] = useState<ExtractionResponse | null>(null);
+  const [debugExpanded, setDebugExpanded] = useState(true);
   const { t } = useLanguage();
 
   const handlePrescriptionNext = async () => {
     if (!prescription.trim()) return;
     
     setExtractionError(null);
+    setDebugResponse(null);
     setStep("extracting");
     
     try {
       const result = await extractPrescription(prescription);
+      
+      // Store debug response
+      setDebugResponse(result);
       
       const validatedItems: ValidatedItem[] = result.items.map((item, index) => ({
         ...item,
@@ -476,6 +486,32 @@ const PrescriptionForm = ({ onSubmit, isLoading = false }: PrescriptionFormProps
               </>
             )}
           </Button>
+        </div>
+      )}
+
+      {/* Debug Panel - Shows extraction API response */}
+      {showDebug && debugResponse && (
+        <div className="mt-8 border-t border-dashed border-orange-300 pt-4">
+          <button
+            onClick={() => setDebugExpanded(!debugExpanded)}
+            className="flex items-center gap-2 text-orange-600 hover:text-orange-700 font-mono text-sm mb-2"
+          >
+            <Bug className="w-4 h-4" />
+            <span>DEBUG: Extraction API Response</span>
+            {debugExpanded ? (
+              <ChevronUp className="w-4 h-4" />
+            ) : (
+              <ChevronDown className="w-4 h-4" />
+            )}
+          </button>
+          
+          {debugExpanded && (
+            <div className="bg-gray-900 text-green-400 rounded-lg p-4 overflow-x-auto">
+              <pre className="text-xs font-mono whitespace-pre-wrap">
+                {JSON.stringify(debugResponse, null, 2)}
+              </pre>
+            </div>
+          )}
         </div>
       )}
     </div>

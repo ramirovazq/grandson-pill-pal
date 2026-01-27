@@ -108,6 +108,29 @@ describe("PrescriptionForm", () => {
       expect(nextButton).toBeEnabled();
     });
 
+    it("should call extractPrescription when next button is clicked", async () => {
+      mockExtractPrescription.mockResolvedValue(mockSingleItemResponse);
+
+      renderWithProviders(<PrescriptionForm onSubmit={mockOnSubmit} />);
+
+      const textarea = screen.getByPlaceholderText(/Example:/i);
+      await userEvent.type(textarea, "Omeoprazol 5mg cada 24 horas");
+
+      const nextButton = screen.getByRole("button", {
+        name: /Next: Validate Items/i,
+      });
+      await userEvent.click(nextButton);
+
+      // Verify extractPrescription was called with the prescription text
+      expect(mockExtractPrescription).toHaveBeenCalledTimes(1);
+      expect(mockExtractPrescription).toHaveBeenCalledWith("Omeoprazol 5mg cada 24 horas");
+
+      // Wait for extraction to complete
+      await waitFor(() => {
+        expect(screen.getByText("Step 2 of 3")).toBeInTheDocument();
+      });
+    });
+
     it("should show loading state while extracting", async () => {
       // Make extraction take time
       mockExtractPrescription.mockImplementation(
@@ -375,8 +398,8 @@ describe("PrescriptionForm", () => {
       await goToPhoneStep();
 
       expect(screen.getByText(/Items validated/i)).toBeInTheDocument();
-      // The item name should be in the summary
-      expect(screen.getByText(/Take 1 pill/i)).toBeInTheDocument();
+      // The item name should be in the summary (may appear multiple times due to debug panel)
+      expect(screen.getAllByText(/Take 1 pill/i).length).toBeGreaterThan(0);
     });
 
     it("should allow going back to edit items", async () => {
