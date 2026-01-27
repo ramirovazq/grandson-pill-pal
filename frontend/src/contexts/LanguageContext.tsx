@@ -11,7 +11,7 @@ interface Translations {
 
 export const translations: Translations = {
   // Header
-  appName: { en: "PillPal", es: "PillPal" },
+  appName: { en: "Grandson Pill Pal", es: "Grandson Pill Pal" },
   tagline: { en: "Because grandma's health is no joke", es: "Porque la salud de la abuela no es broma" },
   
   // Step indicators
@@ -22,7 +22,7 @@ export const translations: Translations = {
   // Prescription form
   prescriptionTitle: { en: "What's on the prescription? 📋", es: "¿Qué dice la receta? 📋" },
   prescriptionSubtitle: { en: "Type it out exactly as it says - we'll make sure grandma never forgets a pill! 💊", es: "Escríbelo tal como dice - ¡nos aseguraremos de que la abuela nunca olvide una pastilla! 💊" },
-  prescriptionPlaceholder: { en: "Example: Take 1 blue pill every morning with food. Take 2 white pills at night before bed...", es: "Ejemplo: Tomar 1 pastilla azul cada mañana con comida. Tomar 2 pastillas blancas por la noche antes de dormir..." },
+  prescriptionPlaceholder: { en: `Example: 1. Omeprazole 5mg Take 1/2 tablet orally every 24 hours for 4 days`, es: `Ejemplo: 1. Omeprazol 5mg Administrar vía oral 1/2 tableta cada 24 horas por 4 días`,},
   beSpecific: { en: "Be specific!", es: "¡Sé específico!" },
   nextValidate: { en: "Next: Validate Items", es: "Siguiente: Validar Items" },
   nextAddPhone: { en: "Next: Add Phone", es: "Siguiente: Agregar Teléfono" },
