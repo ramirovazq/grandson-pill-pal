@@ -15,15 +15,26 @@ export const translations: Translations = {
   tagline: { en: "Because grandma's health is no joke", es: "Porque la salud de la abuela no es broma" },
   
   // Step indicators
-  step1of2: { en: "Step 1 of 2", es: "Paso 1 de 2" },
-  step2of2: { en: "Step 2 of 2", es: "Paso 2 de 2" },
+  step1of3: { en: "Step 1 of 3", es: "Paso 1 de 3" },
+  step2of3: { en: "Step 2 of 3", es: "Paso 2 de 3" },
+  step3of3: { en: "Step 3 of 3", es: "Paso 3 de 3" },
   
   // Prescription form
   prescriptionTitle: { en: "What's on the prescription? 📋", es: "¿Qué dice la receta? 📋" },
   prescriptionSubtitle: { en: "Type it out exactly as it says - we'll make sure grandma never forgets a pill! 💊", es: "Escríbelo tal como dice - ¡nos aseguraremos de que la abuela nunca olvide una pastilla! 💊" },
   prescriptionPlaceholder: { en: "Example: Take 1 blue pill every morning with food. Take 2 white pills at night before bed...", es: "Ejemplo: Tomar 1 pastilla azul cada mañana con comida. Tomar 2 pastillas blancas por la noche antes de dormir..." },
   beSpecific: { en: "Be specific!", es: "¡Sé específico!" },
-  nextAddPhone: { en: "Next: Add Phone Number", es: "Siguiente: Agregar Teléfono" },
+  nextValidate: { en: "Next: Validate Items", es: "Siguiente: Validar Items" },
+  nextAddPhone: { en: "Next: Add Phone", es: "Siguiente: Agregar Teléfono" },
+  
+  // Validation form
+  validateTitle: { en: "Let's double-check! ✅", es: "¡Vamos a verificar! ✅" },
+  validateSubtitle: { en: "Check each item to confirm it's correct. You can edit or remove items too!", es: "Marca cada item para confirmar que es correcto. ¡También puedes editar o eliminar items!" },
+  addItemPlaceholder: { en: "Add another medication...", es: "Agregar otro medicamento..." },
+  validateAllItems: { en: "Please validate all items to continue", es: "Por favor valida todos los items para continuar" },
+  editItems: { en: "← Edit items", es: "← Editar items" },
+  itemsValidated: { en: "Items validated", es: "Items validados" },
+  moreItems: { en: "more", es: "más" },
   
   // Phone form
   phoneTitle: { en: "Where should we send reminders? 📱", es: "¿A dónde enviamos los recordatorios? 📱" },
