@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Check, Heart, MessageCircle, Plus, Sparkles } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface SuccessScreenProps {
   phone: string;
@@ -7,6 +8,8 @@ interface SuccessScreenProps {
 }
 
 const SuccessScreen = ({ phone, onAddAnother }: SuccessScreenProps) => {
+  const { t } = useLanguage();
+
   return (
     <div className="w-full max-w-xl mx-auto text-center space-y-8 animate-fade-in">
       {/* Success Icon */}
@@ -25,10 +28,10 @@ const SuccessScreen = ({ phone, onAddAnother }: SuccessScreenProps) => {
       {/* Success Message */}
       <div className="space-y-3">
         <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground">
-          You're a Superstar! 🌟
+          {t("successTitle")}
         </h2>
         <p className="text-lg text-muted-foreground max-w-md mx-auto">
-          Your loved one is all set! They'll get friendly pill reminders that'll make staying healthy feel like a breeze.
+          {t("successSubtitle")}
         </p>
       </div>
 
@@ -39,7 +42,7 @@ const SuccessScreen = ({ phone, onAddAnother }: SuccessScreenProps) => {
             <MessageCircle className="w-6 h-6 text-secondary" />
           </div>
           <div className="text-left">
-            <p className="text-sm text-muted-foreground">Reminders going to:</p>
+            <p className="text-sm text-muted-foreground">{t("remindersGoingTo")}</p>
             <p className="text-lg font-bold font-display text-foreground">{phone}</p>
           </div>
         </div>
@@ -47,12 +50,10 @@ const SuccessScreen = ({ phone, onAddAnother }: SuccessScreenProps) => {
 
       {/* Example Message Preview */}
       <div className="bg-muted rounded-2xl p-4 max-w-sm mx-auto">
-        <p className="text-sm text-muted-foreground mb-2">Preview message:</p>
+        <p className="text-sm text-muted-foreground mb-2">{t("previewMessage")}</p>
         <div className="bg-card rounded-xl p-4 text-left shadow-sm">
-          <p className="text-sm text-foreground">
-            💊 Hey there! Time for your morning medicine! 
-            <br />
-            Remember to take it with food. You got this! 💪
+          <p className="text-sm text-foreground whitespace-pre-line">
+            {t("sampleMessage")}
           </p>
         </div>
       </div>
@@ -65,12 +66,12 @@ const SuccessScreen = ({ phone, onAddAnother }: SuccessScreenProps) => {
         className="gap-2"
       >
         <Plus className="w-5 h-5" />
-        Add Another Prescription
+        {t("addAnother")}
       </Button>
 
       {/* Fun Footer */}
       <p className="text-sm text-muted-foreground">
-        Made with 💖 for the ones who care
+        {t("madeWith")} 💖 {t("forKeeping")}
       </p>
     </div>
   );

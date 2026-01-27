@@ -2,11 +2,14 @@ import { useState } from "react";
 import PrescriptionForm from "@/components/PrescriptionForm";
 import SuccessScreen from "@/components/SuccessScreen";
 import FloatingPills from "@/components/FloatingPills";
+import SettingsBar from "@/components/SettingsBar";
 import { Pill, Heart } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const Index = () => {
   const [submitted, setSubmitted] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
+  const { t } = useLanguage();
 
   const handleSubmit = (prescription: string, phone: string) => {
     console.log("Prescription:", prescription);
@@ -22,6 +25,9 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Settings Bar */}
+      <SettingsBar />
+
       {/* Floating Pills Background */}
       <FloatingPills />
 
@@ -39,11 +45,11 @@ const Index = () => {
               <Pill className="w-7 h-7 text-primary-foreground" />
             </div>
             <h1 className="text-3xl md:text-4xl font-display font-extrabold text-foreground">
-              PillPal
+              {t("appName")}
             </h1>
           </div>
           <p className="text-muted-foreground text-lg max-w-md mx-auto">
-            Because grandma's health is no joke 
+            {t("tagline")}
             <span className="inline-block animate-wiggle ml-1">💊</span>
           </p>
         </header>
@@ -60,7 +66,7 @@ const Index = () => {
         {/* Footer */}
         <footer className="text-center py-6 animate-fade-in" style={{ animationDelay: "0.5s" }}>
           <p className="text-sm text-muted-foreground flex items-center justify-center gap-2">
-            Made with <Heart className="w-4 h-4 text-primary animate-pulse-soft" /> for keeping loved ones healthy
+            {t("madeWith")} <Heart className="w-4 h-4 text-primary animate-pulse-soft" /> {t("forKeeping")}
           </p>
         </footer>
       </div>
