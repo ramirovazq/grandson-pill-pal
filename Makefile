@@ -3,7 +3,7 @@
 # Convenient commands for development
 
 .PHONY: help install install-frontend install-backend \
-        dev dev-frontend dev-backend \
+        dev dev-frontend dev-backend dev-extractor \
         test test-all test-frontend test-backend test-integration test-watch \
         build lint clean \
         docker-up docker-down docker-build docker-logs docker-ps \
@@ -20,9 +20,10 @@ help:
 	@echo "  make install-backend  - Install backend dependencies"
 	@echo ""
 	@echo "Development (Local):"
-	@echo "  make dev              - Run both frontend and backend dev servers"
+	@echo "  make dev              - Run all dev servers (frontend + backend + extractor)"
 	@echo "  make dev-frontend     - Run frontend dev server (port 5173)"
 	@echo "  make dev-backend      - Run backend dev server (port 8000)"
+	@echo "  make dev-extractor    - Run prescription extractor service (port 8001)"
 	@echo ""
 	@echo "Docker:"
 	@echo "  make docker-up        - Start all services (frontend + backend + postgres)"
@@ -73,15 +74,20 @@ install-backend:
 
 dev:
 	@echo "🚀 Starting development servers..."
-	@echo "Frontend: http://localhost:5173"
-	@echo "Backend:  http://localhost:8000"
-	@echo "API Docs: http://localhost:8000/api/v1/docs"
+	@echo "Frontend:  http://localhost:5173"
+	@echo "Backend:   http://localhost:8000"
+	@echo "Extractor: http://localhost:8001"
+	@echo "API Docs:  http://localhost:8000/api/v1/docs"
 	@echo ""
-	@make -j2 dev-frontend dev-backend
+	@make -j3 dev-frontend dev-backend dev-extractor
 
 dev-frontend:
 	@echo "🌐 Starting frontend dev server..."
 	cd frontend && npm run dev
+
+dev-extractor:
+	@echo "🤖 Starting prescription extractor service..."
+	cd backend && uv run python -m src.services.prescription_extractor
 
 dev-backend:
 	@echo "🐍 Starting backend dev server..."
