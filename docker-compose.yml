@@ -1,6 +1,6 @@
 # Docker Compose for Grandson Pill Pal
 # =====================================
-# Full stack: Frontend (nginx) + Backend (FastAPI) + Database (PostgreSQL)
+# Full stack: Frontend (nginx) + Backend (FastAPI) + Extractor (AI) + Database (PostgreSQL)
 
 services:
   # PostgreSQL Database
@@ -24,6 +24,27 @@ services:
     networks:
       - pillpal-network
 
+  # Prescription Extractor Microservice (AI)
+  extractor:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.extractor
+    container_name: pillpal-extractor
+    restart: unless-stopped
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      EXTRACTOR_PORT: 8001
+    ports:
+      - "8001:8001"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - pillpal-network
+
   # FastAPI Backend
   backend:
     build:
@@ -35,6 +56,7 @@ services:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-pillpal}:${POSTGRES_PASSWORD:-pillpal_secret}@db:5432/${POSTGRES_DB:-pillpal}
       DEBUG: ${DEBUG:-false}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,http://localhost:3000,http://localhost:8080}
+      EXTRACTOR_SERVICE_URL: http://extractor:8001
       TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
       TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
       TWILIO_PHONE_NUMBER: ${TWILIO_PHONE_NUMBER:-}
@@ -42,6 +64,8 @@ services:
       - "8000:8000"
     depends_on:
       db:
+        condition: service_healthy
+      extractor:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"]

@@ -18,11 +18,12 @@ A medication reminder application that helps loved ones (especially grandparents
 │    + Nginx      │     │    + Python     │     │                 │
 └─────────────────┘     └─────────────────┘     └─────────────────┘
                                │
-                               ▼
-                        ┌─────────────────┐
-                        │    Database     │
-                        │  (PostgreSQL)   │
-                        └─────────────────┘
+                    ┌──────────┴──────────┐
+                    ▼                     ▼
+             ┌─────────────┐       ┌─────────────┐
+             │  Database   │       │  Extractor  │
+             │ (PostgreSQL)│       │  (OpenAI)   │
+             └─────────────┘       └─────────────┘
 ```
 
 ## Tech Stack
@@ -39,6 +40,11 @@ A medication reminder application that helps loved ones (especially grandparents
 - SQLAlchemy (async ORM)
 - PostgreSQL / SQLite
 - Pydantic (validation)
+
+**Extractor Service:**
+- FastAPI microservice
+- OpenAI GPT-4o-mini
+- Prescription text analysis
 
 **Infrastructure:**
 - Docker + Docker Compose
@@ -138,10 +144,12 @@ grandson-pill-pal/
 │   ├── src/
 │   │   ├── db/               # Database models & repository
 │   │   ├── models/           # Pydantic models
-│   │   └── routers/          # API endpoints
+│   │   ├── routers/          # API endpoints
+│   │   └── services/         # Microservices (extractor)
 │   ├── tests/                # Unit tests
 │   ├── tests_integration/    # Integration tests
-│   ├── Dockerfile
+│   ├── Dockerfile            # Backend Dockerfile
+│   ├── Dockerfile.extractor  # Extractor service Dockerfile
 │   └── openapi.yaml          # API specification
 ├── docker-compose.yml        # Production setup
 ├── docker-compose.dev.yml    # Development database
@@ -159,17 +167,18 @@ Copy `.env.example` to `.env` and configure:
 | `POSTGRES_DB` | PostgreSQL database name | `pillpal` |
 | `DEBUG` | Enable debug mode | `false` |
 | `CORS_ORIGINS` | Allowed CORS origins | `http://localhost` |
+| `OPENAI_API_KEY` | OpenAI API key for prescription extraction | (required for extractor) |
 | `TWILIO_ACCOUNT_SID` | Twilio account SID | (optional) |
 | `TWILIO_AUTH_TOKEN` | Twilio auth token | (optional) |
 | `TWILIO_PHONE_NUMBER` | Twilio phone number | (optional) |
 
 ## API Documentation
 
-When the backend is running, access the interactive API documentation:
+When services are running, access the interactive API documentation:
 
-- **Swagger UI**: http://localhost:8000/api/v1/docs
-- **ReDoc**: http://localhost:8000/api/v1/redoc
-- **OpenAPI JSON**: http://localhost:8000/api/v1/openapi.json
+- **Backend Swagger UI**: http://localhost:8000/api/v1/docs
+- **Backend ReDoc**: http://localhost:8000/api/v1/redoc
+- **Extractor Swagger UI**: http://localhost:8001/docs
 
 ## Testing
 
