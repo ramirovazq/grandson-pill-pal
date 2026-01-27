@@ -59,6 +59,68 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+- Vitest (testing)
+
+## Development
+
+### Prerequisites
+
+- Node.js >= 18.0.0 (recommended: use [nvm](https://github.com/nvm-sh/nvm) to manage versions)
+- npm
+
+### Running the Development Server
+
+```sh
+# Install dependencies
+npm install
+
+# Start the dev server with hot reload
+npm run dev
+```
+
+The development server will start at `http://localhost:5173` (or the next available port).
+
+### Available Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server with hot reload |
+| `npm run build` | Build for production |
+| `npm run build:dev` | Build for development |
+| `npm run preview` | Preview production build locally |
+| `npm run lint` | Run ESLint to check code quality |
+| `npm run test` | Run unit tests once |
+| `npm run test:watch` | Run unit tests in watch mode |
+
+### Running Tests
+
+This project uses [Vitest](https://vitest.dev/) with [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/) for unit testing.
+
+```sh
+# Run all tests once
+npm run test
+
+# Run tests in watch mode (re-runs on file changes)
+npm run test:watch
+```
+
+Test files are located alongside the source files with the `.test.ts` or `.test.tsx` extension:
+
+```
+src/
+├── components/
+│   ├── PrescriptionForm.tsx
+│   ├── PrescriptionForm.test.tsx
+│   ├── SuccessScreen.tsx
+│   ├── SuccessScreen.test.tsx
+│   └── ...
+├── contexts/
+│   ├── LanguageContext.tsx
+│   └── LanguageContext.test.tsx
+└── lib/
+    ├── utils.ts
+    └── utils.test.ts
+```
 
 ## How can I deploy this project?
 
