@@ -70,7 +70,17 @@ uv add <package_name>
 ### Running Tests
 
 ```bash
+# Run all tests
 uv run pytest
+
+# Run tests with verbose output
+uv run pytest -v
+
+# Run a specific test file
+uv run pytest tests/test_prescriptions.py
+
+# Run tests with coverage (requires pytest-cov)
+uv run pytest --cov=src
 ```
 
 ## Environment Variables
