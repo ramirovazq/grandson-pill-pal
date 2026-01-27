@@ -63,10 +63,26 @@ export const translations: Translations = {
   
   // Loading states
   sending: { en: "Sending...", es: "Enviando..." },
+  extracting: { en: "Analyzing prescription...", es: "Analizando receta..." },
+  extractingSubtitle: { en: "Our AI is reading your prescription to identify medications", es: "Nuestra IA está leyendo tu receta para identificar medicamentos" },
+  
+  // Extracted items
+  medication: { en: "Medication", es: "Medicamento" },
+  food: { en: "Therapeutic Food", es: "Alimento Terapéutico" },
+  procedure: { en: "Procedure", es: "Procedimiento" },
+  pillsPerDose: { en: "pills/dose", es: "pastillas/dosis" },
+  dosesPerDay: { en: "times/day", es: "veces/día" },
+  durationDays: { en: "days", es: "días" },
+  totalPills: { en: "total pills", es: "pastillas totales" },
+  highConfidence: { en: "High confidence", es: "Alta confianza" },
+  mediumConfidence: { en: "Medium confidence", es: "Confianza media" },
+  lowConfidence: { en: "Low confidence", es: "Baja confianza" },
+  needsReview: { en: "Needs review", es: "Necesita revisión" },
   
   // Errors
   errorTitle: { en: "Error", es: "Error" },
   errorCreatePrescription: { en: "Failed to create prescription. Please try again.", es: "No se pudo crear la prescripción. Por favor intenta de nuevo." },
+  errorExtraction: { en: "Failed to analyze prescription. Please try again.", es: "No se pudo analizar la receta. Por favor intenta de nuevo." },
 };
 
 interface LanguageContextType {

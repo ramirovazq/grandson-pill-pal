@@ -1,12 +1,72 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import PrescriptionForm from "./PrescriptionForm";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 
+// Mock the extractor API
+vi.mock("@/api", async () => {
+  const actual = await vi.importActual("@/api");
+  return {
+    ...actual,
+    extractPrescription: vi.fn(),
+  };
+});
+
+import { extractPrescription } from "@/api";
+
+const mockExtractPrescription = vi.mocked(extractPrescription);
+
 // Wrapper component with required providers
 const renderWithProviders = (component: React.ReactElement) => {
   return render(<LanguageProvider>{component}</LanguageProvider>);
+};
+
+// Mock extraction response
+const mockExtractionResponse = {
+  items: [
+    {
+      item_type: "medication" as const,
+      item_name: "Blue pill",
+      item_name_complete: "Take 1 blue pill in the morning",
+      pills_per_dose: 1,
+      doses_per_day: 1,
+      treatment_duration_days: 7,
+      total_pills_required: 7,
+      raw_prescription_text: "Take 1 blue pill in the morning",
+      confidence_level: "high" as const,
+      requires_human_review: false,
+    },
+    {
+      item_type: "medication" as const,
+      item_name: "White pills",
+      item_name_complete: "Take 2 white pills at night",
+      pills_per_dose: 2,
+      doses_per_day: 1,
+      treatment_duration_days: 7,
+      total_pills_required: 14,
+      raw_prescription_text: "Take 2 white pills at night",
+      confidence_level: "high" as const,
+      requires_human_review: false,
+    },
+  ],
+};
+
+const mockSingleItemResponse = {
+  items: [
+    {
+      item_type: "medication" as const,
+      item_name: "Pill",
+      item_name_complete: "Take 1 pill",
+      pills_per_dose: 1,
+      doses_per_day: 1,
+      treatment_duration_days: null,
+      total_pills_required: null,
+      raw_prescription_text: "Take 1 pill",
+      confidence_level: "medium" as const,
+      requires_human_review: false,
+    },
+  ],
 };
 
 describe("PrescriptionForm", () => {
@@ -14,6 +74,7 @@ describe("PrescriptionForm", () => {
 
   beforeEach(() => {
     mockOnSubmit.mockClear();
+    mockExtractPrescription.mockClear();
   });
 
   describe("Step 1: Prescription Input", () => {
@@ -47,7 +108,12 @@ describe("PrescriptionForm", () => {
       expect(nextButton).toBeEnabled();
     });
 
-    it("should proceed to validation step when next is clicked", async () => {
+    it("should show loading state while extracting", async () => {
+      // Make extraction take time
+      mockExtractPrescription.mockImplementation(
+        () => new Promise((resolve) => setTimeout(() => resolve(mockSingleItemResponse), 100))
+      );
+
       renderWithProviders(<PrescriptionForm onSubmit={mockOnSubmit} />);
 
       const textarea = screen.getByPlaceholderText(/Example:/i);
@@ -58,12 +124,59 @@ describe("PrescriptionForm", () => {
       });
       await userEvent.click(nextButton);
 
-      expect(screen.getByText("Step 2 of 3")).toBeInTheDocument();
+      // Should show loading state
+      expect(screen.getByText(/Analyzing prescription/i)).toBeInTheDocument();
+
+      // Wait for extraction to complete
+      await waitFor(() => {
+        expect(screen.getByText("Step 2 of 3")).toBeInTheDocument();
+      });
+    });
+
+    it("should proceed to validation step after successful extraction", async () => {
+      mockExtractPrescription.mockResolvedValue(mockExtractionResponse);
+
+      renderWithProviders(<PrescriptionForm onSubmit={mockOnSubmit} />);
+
+      const textarea = screen.getByPlaceholderText(/Example:/i);
+      await userEvent.type(textarea, "Take 1 blue pill. Take 2 white pills");
+
+      const nextButton = screen.getByRole("button", {
+        name: /Next: Validate Items/i,
+      });
+      await userEvent.click(nextButton);
+
+      await waitFor(() => {
+        expect(screen.getByText("Step 2 of 3")).toBeInTheDocument();
+      });
+    });
+
+    it("should show error message on extraction failure", async () => {
+      mockExtractPrescription.mockRejectedValue(new Error("API Error"));
+
+      renderWithProviders(<PrescriptionForm onSubmit={mockOnSubmit} />);
+
+      const textarea = screen.getByPlaceholderText(/Example:/i);
+      await userEvent.type(textarea, "Take 1 pill");
+
+      const nextButton = screen.getByRole("button", {
+        name: /Next: Validate Items/i,
+      });
+      await userEvent.click(nextButton);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Failed to analyze prescription/i)).toBeInTheDocument();
+      });
+
+      // Should stay on step 1
+      expect(screen.getByText("Step 1 of 3")).toBeInTheDocument();
     });
   });
 
   describe("Step 2: Validation", () => {
     const goToValidationStep = async () => {
+      mockExtractPrescription.mockResolvedValue(mockExtractionResponse);
+
       renderWithProviders(<PrescriptionForm onSubmit={mockOnSubmit} />);
 
       const textarea = screen.getByPlaceholderText(/Example:/i);
@@ -76,19 +189,31 @@ describe("PrescriptionForm", () => {
         name: /Next: Validate Items/i,
       });
       await userEvent.click(nextButton);
+
+      await waitFor(() => {
+        expect(screen.getByText("Step 2 of 3")).toBeInTheDocument();
+      });
     };
 
-    it("should parse prescription into separate items", async () => {
+    it("should display extracted items", async () => {
       await goToValidationStep();
 
       expect(screen.getByText("#1")).toBeInTheDocument();
       expect(screen.getByText("#2")).toBeInTheDocument();
+      // Text appears in multiple places (label and raw text), use getAllByText
       expect(
-        screen.getByText(/Take 1 blue pill in the morning/i)
-      ).toBeInTheDocument();
+        screen.getAllByText(/Take 1 blue pill in the morning/i).length
+      ).toBeGreaterThan(0);
       expect(
-        screen.getByText(/Take 2 white pills at night/i)
-      ).toBeInTheDocument();
+        screen.getAllByText(/Take 2 white pills at night/i).length
+      ).toBeGreaterThan(0);
+    });
+
+    it("should show medication type badge", async () => {
+      await goToValidationStep();
+
+      const badges = screen.getAllByText(/Medication/i);
+      expect(badges.length).toBeGreaterThan(0);
     });
 
     it("should have checkboxes for each item", async () => {
@@ -127,7 +252,7 @@ describe("PrescriptionForm", () => {
       const input = screen.getByPlaceholderText(/Add another medication/i);
       await userEvent.type(input, "Take vitamins daily");
 
-      // Find the add button by looking for the button next to the input (with plus icon)
+      // Find the add button by looking for the button with plus icon
       const allButtons = screen.getAllByRole("button");
       const addButton = allButtons.find((btn) => 
         btn.querySelector(".lucide-plus")
@@ -135,7 +260,9 @@ describe("PrescriptionForm", () => {
       expect(addButton).toBeDefined();
       await userEvent.click(addButton!);
 
-      expect(screen.getByText(/Take vitamins daily/i)).toBeInTheDocument();
+      // The text appears in multiple places (label and raw text), so use getAllByText
+      const vitaminsTexts = screen.getAllByText(/Take vitamins daily/i);
+      expect(vitaminsTexts.length).toBeGreaterThan(0);
       expect(screen.getAllByRole("checkbox").length).toBe(3);
     });
 
@@ -168,6 +295,8 @@ describe("PrescriptionForm", () => {
 
   describe("Step 3: Phone Input", () => {
     const goToPhoneStep = async () => {
+      mockExtractPrescription.mockResolvedValue(mockSingleItemResponse);
+
       renderWithProviders(<PrescriptionForm onSubmit={mockOnSubmit} />);
 
       // Step 1: Enter prescription
@@ -178,6 +307,11 @@ describe("PrescriptionForm", () => {
         name: /Next: Validate Items/i,
       });
       await userEvent.click(nextButton1);
+
+      // Wait for extraction
+      await waitFor(() => {
+        expect(screen.getByText("Step 2 of 3")).toBeInTheDocument();
+      });
 
       // Step 2: Validate all items
       const checkbox = screen.getByRole("checkbox");
@@ -241,7 +375,7 @@ describe("PrescriptionForm", () => {
       await goToPhoneStep();
 
       expect(screen.getByText(/Items validated/i)).toBeInTheDocument();
-      // The text "Take 1 pill" should be in the summary list
+      // The item name should be in the summary
       expect(screen.getByText(/Take 1 pill/i)).toBeInTheDocument();
     });
 
@@ -252,6 +386,45 @@ describe("PrescriptionForm", () => {
       await userEvent.click(editButton);
 
       expect(screen.getByText("Step 2 of 3")).toBeInTheDocument();
+    });
+  });
+
+  describe("Loading state", () => {
+    it("should show loading state when isLoading prop is true", async () => {
+      mockExtractPrescription.mockResolvedValue(mockSingleItemResponse);
+
+      renderWithProviders(
+        <PrescriptionForm onSubmit={mockOnSubmit} isLoading={true} />
+      );
+
+      // Go through all steps to reach submit
+      const textarea = screen.getByPlaceholderText(/Example:/i);
+      await userEvent.type(textarea, "Take 1 pill");
+
+      const nextButton1 = screen.getByRole("button", {
+        name: /Next: Validate Items/i,
+      });
+      await userEvent.click(nextButton1);
+
+      await waitFor(() => {
+        expect(screen.getByText("Step 2 of 3")).toBeInTheDocument();
+      });
+
+      const checkbox = screen.getByRole("checkbox");
+      await userEvent.click(checkbox);
+
+      const nextButton2 = screen.getByRole("button", {
+        name: /Next: Add Phone/i,
+      });
+      await userEvent.click(nextButton2);
+
+      const phoneInput = screen.getByPlaceholderText(/\+1 \(555\) 123-4567/i);
+      await userEvent.type(phoneInput, "+1 555 123 4567");
+
+      // Submit button should show loading state and be disabled
+      expect(screen.getByText(/Sending/i)).toBeInTheDocument();
+      const sendingButton = screen.getByText(/Sending/i).closest("button");
+      expect(sendingButton).toBeDisabled();
     });
   });
 });

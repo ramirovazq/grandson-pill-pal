@@ -3,6 +3,7 @@
  */
 
 export { api, ApiError } from "./client";
+export { extractPrescription, checkExtractorHealth } from "./extractor";
 export type {
   // Enums
   PrescriptionStatus,
@@ -24,3 +25,8 @@ export type {
   ValidationErrorDetail,
   ValidationErrorResponse,
 } from "./types";
+export type {
+  ExtractedItem,
+  ExtractionResponse,
+  ExtractionRequest,
+} from "./extractor";
