@@ -46,9 +46,8 @@ dist/
 .DS_Store
 Thumbs.db
 
-# uv
+# uv cache (but keep uv.lock for reproducible builds)
 .uv/
-uv.lock
 
 # Git
 .git/

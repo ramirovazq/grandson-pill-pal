@@ -184,13 +184,13 @@ docker-dev-up:
 	docker compose -f docker-compose.dev.yml up -d db
 	@echo ""
 	@echo "✅ PostgreSQL started!"
-	@echo "   Host: localhost:5432"
+	@echo "   Host: localhost:5434"
 	@echo "   User: pillpal"
 	@echo "   Pass: pillpal_dev"
 	@echo "   DB:   pillpal_dev"
 	@echo ""
 	@echo "Connection string for backend:"
-	@echo "   DATABASE_URL=postgresql+asyncpg://pillpal:pillpal_dev@localhost:5432/pillpal_dev"
+	@echo "   DATABASE_URL=postgresql+asyncpg://pillpal:pillpal_dev@localhost:5434/pillpal_dev"
 
 docker-dev-down:
 	@echo "🐳 Stopping development database..."

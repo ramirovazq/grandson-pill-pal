@@ -14,8 +14,10 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-pillpal}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    # Port not exposed externally - only accessible from other containers
+    # Uncomment the line below if you need direct access to the database
+    # ports:
+    #   - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pillpal} -d ${POSTGRES_DB:-pillpal}"]
       interval: 10s

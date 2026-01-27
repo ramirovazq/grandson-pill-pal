@@ -21,7 +21,7 @@ src/test/
 *.swp
 *.swo
 
-# Environment files
+# Environment files (keep .env.example)
 .env
 .env.local
 .env.*.local
@@ -40,11 +40,6 @@ Thumbs.db
 
 # Documentation
 README.md
-*.md
 
-# Config files not needed in production
-.eslintrc*
-.prettierrc*
-tsconfig*.json
-vite.config.ts
+# Test config only
 vitest.config.ts
