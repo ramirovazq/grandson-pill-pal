@@ -4,8 +4,11 @@ from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.db.mock_db import MockDatabase, get_db
+from src.db import PrescriptionRepository, get_async_session
+from src.db.models import PrescriptionStatus as DBPrescriptionStatus
+from src.db.models import ReminderStatus as DBReminderStatus
 from src.models.common import ErrorResponse
 from src.models.prescription import (
     CreatePrescriptionRequest,
@@ -18,6 +21,13 @@ from src.models.prescription import (
 from src.models.reminder import ReminderList, ReminderStatus
 
 router = APIRouter(prefix="/prescriptions", tags=["Prescriptions"])
+
+
+async def get_repository(
+    session: AsyncSession = Depends(get_async_session),
+) -> PrescriptionRepository:
+    """Dependency to get a prescription repository."""
+    return PrescriptionRepository(session)
 
 
 @router.post(
@@ -33,10 +43,10 @@ router = APIRouter(prefix="/prescriptions", tags=["Prescriptions"])
 )
 async def create_prescription(
     request: CreatePrescriptionRequest,
-    db: MockDatabase = Depends(get_db),
+    repo: PrescriptionRepository = Depends(get_repository),
 ) -> Prescription:
     """Create a new prescription with medication items."""
-    return db.create_prescription(request)
+    return await repo.create_prescription(request)
 
 
 @router.get(
@@ -56,18 +66,17 @@ async def list_prescriptions(
         default=20, ge=1, le=100, description="Maximum number of results"
     ),
     offset: int = Query(default=0, ge=0, description="Number of results to skip"),
-    db: MockDatabase = Depends(get_db),
+    repo: PrescriptionRepository = Depends(get_repository),
 ) -> PrescriptionList:
     """List prescriptions with optional filters and pagination."""
-    prescriptions, total = db.list_prescriptions(
+    # Convert Pydantic enum to DB enum if provided
+    db_status = None
+    if prescription_status:
+        db_status = DBPrescriptionStatus(prescription_status.value)
+
+    return await repo.list_prescriptions(
         phone_number=phone_number,
-        status=prescription_status,
-        limit=limit,
-        offset=offset,
-    )
-    return PrescriptionList(
-        prescriptions=prescriptions,
-        total=total,
+        status=db_status,
         limit=limit,
         offset=offset,
     )
@@ -84,10 +93,10 @@ async def list_prescriptions(
 )
 async def get_prescription(
     prescription_id: UUID,
-    db: MockDatabase = Depends(get_db),
+    repo: PrescriptionRepository = Depends(get_repository),
 ) -> Prescription:
     """Get a specific prescription by ID."""
-    prescription = db.get_prescription(prescription_id)
+    prescription = await repo.get_prescription(prescription_id)
     if not prescription:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -109,10 +118,10 @@ async def get_prescription(
 async def update_prescription(
     prescription_id: UUID,
     request: UpdatePrescriptionRequest,
-    db: MockDatabase = Depends(get_db),
+    repo: PrescriptionRepository = Depends(get_repository),
 ) -> Prescription:
     """Update an existing prescription."""
-    prescription = db.update_prescription(prescription_id, request)
+    prescription = await repo.update_prescription(prescription_id, request)
     if not prescription:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -132,10 +141,10 @@ async def update_prescription(
 )
 async def delete_prescription(
     prescription_id: UUID,
-    db: MockDatabase = Depends(get_db),
+    repo: PrescriptionRepository = Depends(get_repository),
 ) -> None:
     """Delete a prescription."""
-    deleted = db.delete_prescription(prescription_id)
+    deleted = await repo.delete_prescription(prescription_id)
     if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -155,10 +164,12 @@ async def delete_prescription(
 async def update_prescription_status(
     prescription_id: UUID,
     request: UpdateStatusRequest,
-    db: MockDatabase = Depends(get_db),
+    repo: PrescriptionRepository = Depends(get_repository),
 ) -> Prescription:
     """Update a prescription's status."""
-    prescription = db.update_prescription_status(prescription_id, request.status)
+    # Convert Pydantic enum to DB enum
+    db_status = DBPrescriptionStatus(request.status.value)
+    prescription = await repo.update_prescription_status(prescription_id, db_status)
     if not prescription:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -182,13 +193,18 @@ async def get_prescription_reminders(
     reminder_status: Optional[ReminderStatus] = Query(
         default=None, alias="status", description="Filter by reminder status"
     ),
-    db: MockDatabase = Depends(get_db),
+    repo: PrescriptionRepository = Depends(get_repository),
 ) -> ReminderList:
     """Get all reminders for a prescription."""
-    reminders = db.get_reminders(prescription_id, status=reminder_status)
-    if reminders is None:
+    # Convert Pydantic enum to DB enum if provided
+    db_status = None
+    if reminder_status:
+        db_status = DBReminderStatus(reminder_status.value)
+
+    reminder_list = await repo.get_reminders(prescription_id, status=db_status)
+    if reminder_list is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"error": "not_found", "message": "Prescription not found"},
         )
-    return ReminderList(reminders=reminders, total=len(reminders))
+    return reminder_list

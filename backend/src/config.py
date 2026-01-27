@@ -20,8 +20,8 @@ class Settings(BaseSettings):
     api_host: str = "0.0.0.0"
     api_port: int = 8000
 
-    # Database settings (for future use)
-    database_url: str = "sqlite:///./pillpal.db"
+    # Database settings
+    database_url: str = "sqlite+aiosqlite:///./pillpal.db"
 
     # Twilio settings (for future use)
     twilio_account_sid: str = ""

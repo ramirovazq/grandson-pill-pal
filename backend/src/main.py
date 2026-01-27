@@ -1,11 +1,22 @@
 """FastAPI application entry point."""
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.openapi.utils import get_openapi
 
 from src.config import settings
+from src.db import create_db_and_tables
 from src.routers import health_router, prescriptions_router
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan handler - runs on startup and shutdown."""
+    # Startup: Create database tables
+    await create_db_and_tables()
+    yield
+    # Shutdown: Cleanup (nothing needed for now)
 
 # OpenAPI tags metadata for Swagger documentation
 tags_metadata = [
@@ -28,6 +39,7 @@ tags_metadata = [
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
+    lifespan=lifespan,
     description="""
 ## Grandson Pill Pal API
 

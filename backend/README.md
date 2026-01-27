@@ -47,9 +47,22 @@ When the server is running, you can access the interactive API documentation:
                                ▼
                         ┌─────────────────┐
                         │    Database     │
-                        │  (PostgreSQL)   │
+                        │    (SQLite)     │
                         └─────────────────┘
 ```
+
+### Database
+
+The backend uses **SQLite** with **SQLAlchemy** (async) for data persistence.
+
+- **Development**: Uses file-based SQLite (`pillpal.db`)
+- **Testing**: Uses in-memory SQLite for fast, isolated tests
+- **Production**: Can be switched to PostgreSQL by changing the `DATABASE_URL`
+
+**Database Tables:**
+- `prescriptions` - Stores prescription records
+- `prescription_items` - Stores medication items for each prescription
+- `reminders` - Stores scheduled SMS reminders
 
 ## Development Setup
 
