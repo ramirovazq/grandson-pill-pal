@@ -4,10 +4,11 @@
 
 .PHONY: help install install-frontend install-backend \
         dev dev-frontend dev-backend dev-extractor \
-        test test-all test-frontend test-backend test-integration test-watch \
+        test test-all test-frontend test-backend test-extractor test-integration test-watch \
         build lint clean \
-        docker-up docker-down docker-build docker-logs docker-ps \
-        docker-dev-up docker-dev-down
+        docker-up docker-down docker-build docker-logs docker-logs-extractor \
+        docker-logs-backend docker-logs-frontend docker-logs-db docker-ps \
+        docker-dev-up docker-dev-down docker-clean
 
 # Default target
 help:
@@ -26,10 +27,11 @@ help:
 	@echo "  make dev-extractor    - Run prescription extractor service (port 8001)"
 	@echo ""
 	@echo "Docker:"
-	@echo "  make docker-up        - Start all services (frontend + backend + postgres)"
+	@echo "  make docker-up        - Start all services (frontend + backend + extractor + postgres)"
 	@echo "  make docker-down      - Stop all services"
 	@echo "  make docker-build     - Build Docker images"
 	@echo "  make docker-logs      - View logs from all services"
+	@echo "  make docker-logs-extractor - View extractor service logs"
 	@echo "  make docker-ps        - Show running containers"
 	@echo "  make docker-dev-up    - Start development database (postgres only)"
 	@echo "  make docker-dev-down  - Stop development database"
@@ -39,6 +41,7 @@ help:
 	@echo "  make test-all         - Run all tests (unit + integration)"
 	@echo "  make test-frontend    - Run frontend unit tests"
 	@echo "  make test-backend     - Run backend unit tests"
+	@echo "  make test-extractor   - Run extractor service tests"
 	@echo "  make test-integration - Run backend integration tests"
 	@echo "  make test-watch       - Run frontend tests in watch mode"
 	@echo ""
@@ -111,6 +114,10 @@ test-backend:
 	@echo "🧪 Running backend unit tests..."
 	cd backend && uv run pytest tests/ -v
 
+test-extractor:
+	@echo "🧪 Running extractor service tests..."
+	cd backend && uv run pytest tests/test_extractor.py -v
+
 test-integration:
 	@echo "🔗 Running backend integration tests..."
 	cd backend && uv run pytest tests_integration/ -v
@@ -167,9 +174,12 @@ docker-up:
 	docker compose up -d
 	@echo ""
 	@echo "✅ Services started!"
-	@echo "   Frontend: http://localhost"
-	@echo "   Backend:  http://localhost:8000"
-	@echo "   API Docs: http://localhost:8000/api/v1/docs"
+	@echo "   Frontend:       http://localhost"
+	@echo "   Backend:        http://localhost:8000"
+	@echo "   Extractor:      http://localhost:8001"
+	@echo "   Backend Docs:   http://localhost:8000/api/v1/docs"
+	@echo "   Extractor Docs: http://localhost:8001/docs"
+	@echo "   PostgreSQL:     localhost:5435"
 
 docker-down:
 	@echo "🐳 Stopping all services..."
@@ -181,6 +191,18 @@ docker-build:
 
 docker-logs:
 	docker compose logs -f
+
+docker-logs-extractor:
+	docker compose logs -f extractor
+
+docker-logs-backend:
+	docker compose logs -f backend
+
+docker-logs-frontend:
+	docker compose logs -f frontend
+
+docker-logs-db:
+	docker compose logs -f db
 
 docker-ps:
 	docker compose ps
