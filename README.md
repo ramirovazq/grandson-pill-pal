@@ -9,6 +9,16 @@ This repository aims to generate an application that helps loved ones (especiall
 
 - 1.[Description of the problem](#1-description-of-the-problem)
 - 2.[Objective](#2-objective)
+- 3.[AI System Development](#3-ai-system-development)
+- 4.[Technologies and system architecture](#4-technologies-and-system-architecture)
+- 5.[Front-end implementation](#5-front-end-implementation)
+- 6.[API contract (OpenAPI specifications)](#6-api-contract-openapi-specifications)
+- 7.[Back-end implementation](#7-back-end-implementation)
+- 8.[Database integration ](#8-database-integration)
+- 9.[Containerization and deployment](#9-containerization-and-deployment)
+- 10.[Integration testing](#10-integration-testing)
+- 11.[Deployment  ](#11-deployment)
+- 12.[Reproducibility   ](#12-reproducibility)
 
 ## 1. Description of the problem
 
@@ -50,14 +60,7 @@ Backend development was initiated based on the previously defined API specificat
 AI coding assistants were used to containerize the entire application, ensuring consistency across environments. Finally, the assistants supported the generation of deployment configuration files, enabling the project to be prepared for production deployment.
 
 
-## Features
-
-- Create prescriptions with multiple medication items
-- Schedule SMS reminders to be sent at appropriate times
-- Multi-language support (English and Spanish)
-- Flexible scheduling with customizable reminder times
-
-## Architecture
+## 4. Technologies and system architecture
 
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
@@ -97,6 +100,15 @@ AI coding assistants were used to containerize the entire application, ensuring 
 **Infrastructure:**
 - Docker + Docker Compose
 - PostgreSQL 16
+
+## Features
+
+- Create prescriptions with multiple medication items
+- Schedule SMS reminders to be sent at appropriate times
+- Multi-language support (English and Spanish)
+- Flexible scheduling with customizable reminder times
+
+
 
 ## Quick Start
 
