@@ -339,13 +339,13 @@ The OpenAPI specification automatically generates interactive documentation:
 - **httpx**: Async HTTP client for tests
 - **uv**: Fast Python package manager
 
-## 8. Database integration
+## 7. Database integration
 
 <p align="justify">
 The database layer is a critical component of the Grandson Pill Pal application, designed to support multiple database engines across different environments. The architecture uses SQLAlchemy's async ORM to provide a flexible, performant, and environment-aware data persistence layer.
 </p>
 
-### 8.1 Multi-Database Support Strategy
+### 7.1 Multi-Database Support Strategy
 
 The application supports different database engines depending on the environment:
 
@@ -356,7 +356,7 @@ The application supports different database engines depending on the environment
 | **Integration Testing** | SQLite (file-based) | aiosqlite | Real database operations |
 | **Docker/Production** | PostgreSQL 16 | asyncpg | Scalable, production-ready |
 
-### 8.2 Database Schema
+### 7.2 Database Schema
 
 The database schema consists of three main tables that map directly to the OpenAPI specification:
 
