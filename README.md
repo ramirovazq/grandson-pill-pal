@@ -339,6 +339,142 @@ The OpenAPI specification automatically generates interactive documentation:
 - **httpx**: Async HTTP client for tests
 - **uv**: Fast Python package manager
 
+## 8. Database integration
+
+<p align="justify">
+The database layer is a critical component of the Grandson Pill Pal application, designed to support multiple database engines across different environments. The architecture uses SQLAlchemy's async ORM to provide a flexible, performant, and environment-aware data persistence layer.
+</p>
+
+### 8.1 Multi-Database Support Strategy
+
+The application supports different database engines depending on the environment:
+
+| Environment | Database | Driver | Purpose |
+|-------------|----------|--------|---------|
+| **Local Development** | SQLite | aiosqlite | Fast iteration, no setup required |
+| **Unit Testing** | SQLite (in-memory) | aiosqlite | Isolated tests, ultra-fast |
+| **Integration Testing** | SQLite (file-based) | aiosqlite | Real database operations |
+| **Docker/Production** | PostgreSQL 16 | asyncpg | Scalable, production-ready |
+
+### 8.2 Database Schema
+
+The database schema consists of three main tables that map directly to the OpenAPI specification:
+
+#### Prescriptions Table
+
+```sql
+CREATE TABLE prescriptions (
+    id VARCHAR(36) PRIMARY KEY,
+    phone_number VARCHAR(20) NOT NULL,
+    language VARCHAR(5) NOT NULL DEFAULT 'en',
+    timezone VARCHAR(50) NOT NULL DEFAULT 'UTC',
+    recipient_name VARCHAR(100),
+    status VARCHAR(20) NOT NULL DEFAULT 'active',
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    INDEX idx_phone_number (phone_number),
+    INDEX idx_status (status)
+);
+```
+
+**SQLAlchemy Model:**
+```python
+class PrescriptionModel(Base):
+    __tablename__ = "prescriptions"
+    
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    phone_number: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    language: Mapped[str] = mapped_column(String(5), nullable=False, default="en")
+    timezone: Mapped[str] = mapped_column(String(50), nullable=False, default="UTC")
+    recipient_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    status: Mapped[str] = mapped_column(Enum(PrescriptionStatus), nullable=False, default=PrescriptionStatus.ACTIVE, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now)
+    
+    # Relationships
+    items: Mapped[list["PrescriptionItemModel"]] = relationship("PrescriptionItemModel", back_populates="prescription", cascade="all, delete-orphan", lazy="selectin")
+    reminders: Mapped[list["ReminderModel"]] = relationship("ReminderModel", back_populates="prescription", cascade="all, delete-orphan", lazy="selectin")
+```
+
+#### Prescription Items Table
+
+```sql
+CREATE TABLE prescription_items (
+    id VARCHAR(36) PRIMARY KEY,
+    prescription_id VARCHAR(36) NOT NULL,
+    text TEXT NOT NULL,
+    item_type VARCHAR(20),
+    item_name VARCHAR(200),
+    item_name_complete VARCHAR(500),
+    pills_per_dose FLOAT,
+    doses_per_day INTEGER,
+    treatment_duration_days INTEGER,
+    total_pills_required INTEGER,
+    raw_prescription_text TEXT,
+    confidence_level VARCHAR(20),
+    requires_human_review BOOLEAN DEFAULT false,
+    schedule_times TEXT,
+    schedule_days TEXT,
+    FOREIGN KEY (prescription_id) REFERENCES prescriptions(id) ON DELETE CASCADE,
+    INDEX idx_prescription_id (prescription_id)
+);
+```
+
+**SQLAlchemy Model:**
+```python
+class PrescriptionItemModel(Base):
+    __tablename__ = "prescription_items"
+    
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    prescription_id: Mapped[str] = mapped_column(String(36), ForeignKey("prescriptions.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    # Basic fields
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    
+    # Detailed fields (from AI extraction and user validation)
+    item_type: Mapped[Optional[str]] = mapped_column(Enum(ItemType), nullable=True, default=ItemType.MEDICATION)
+    item_name: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    item_name_complete: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    pills_per_dose: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    doses_per_day: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    treatment_duration_days: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    total_pills_required: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    raw_prescription_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    confidence_level: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    requires_human_review: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True, default=False)
+    
+    # Schedule fields (JSON strings)
+    schedule_times: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    schedule_days: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    # Relationships
+    prescription: Mapped["PrescriptionModel"] = relationship("PrescriptionModel", back_populates="items")
+    reminders: Mapped[list["ReminderModel"]] = relationship("ReminderModel", back_populates="item", cascade="all, delete-orphan", lazy="selectin")
+```
+
+#### Reminders Table
+
+```sql
+CREATE TABLE reminders (
+    id VARCHAR(36) PRIMARY KEY,
+    prescription_id VARCHAR(36) NOT NULL,
+    item_id VARCHAR(36) NOT NULL,
+    message TEXT,
+    scheduled_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    sent_at TIMESTAMP WITH TIME ZONE,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    FOREIGN KEY (prescription_id) REFERENCES prescriptions(id) ON DELETE CASCADE,
+    FOREIGN KEY (item_id) REFERENCES prescription_items(id) ON DELETE CASCADE,
+    INDEX idx_prescription_id (prescription_id),
+    INDEX idx_item_id (item_id),
+    INDEX idx_scheduled_at (scheduled_at),
+    INDEX idx_status (status)
+);
+```
+
+
+
+✅ **Result**: The database layer is properly integrated, supports multiple environments (SQLite for development/testing, PostgreSQL for production), and is comprehensively documented with code examples and configuration details.
 
 ## Features
 
