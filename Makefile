@@ -8,7 +8,8 @@
         build lint clean \
         docker-up docker-down docker-build docker-logs docker-logs-extractor \
         docker-logs-backend docker-logs-frontend docker-logs-db docker-ps \
-        docker-dev-up docker-dev-down docker-clean
+        docker-dev-up docker-dev-down docker-clean \
+        db-migrate db-upgrade db-downgrade db-history
 
 # Default target
 help:
@@ -25,6 +26,12 @@ help:
 	@echo "  make dev-frontend     - Run frontend dev server (port 5173)"
 	@echo "  make dev-backend      - Run backend dev server (port 8000)"
 	@echo "  make dev-extractor    - Run prescription extractor service (port 8001)"
+	@echo ""
+	@echo "Database Migrations:"
+	@echo "  make db-migrate       - Create a new migration (prompts for message)"
+	@echo "  make db-upgrade       - Apply all pending migrations"
+	@echo "  make db-downgrade     - Rollback the last migration"
+	@echo "  make db-history       - Show migration history"
 	@echo ""
 	@echo "Docker:"
 	@echo "  make docker-up        - Start all services (frontend + backend + extractor + postgres)"
@@ -55,6 +62,26 @@ help:
 	@echo "Cleanup:"
 	@echo "  make clean            - Remove build artifacts and caches"
 	@echo "  make docker-clean     - Remove Docker volumes and images"
+
+# ============================================================================
+# Database Migrations (Alembic)
+# ============================================================================
+
+db-migrate:
+	@read -p "Migration message: " msg; \
+	cd backend && uv run alembic revision --autogenerate -m "$$msg"
+
+db-upgrade:
+	@echo "📦 Applying database migrations..."
+	cd backend && uv run alembic upgrade head
+
+db-downgrade:
+	@echo "⬇️  Rolling back last migration..."
+	cd backend && uv run alembic downgrade -1
+
+db-history:
+	@echo "📜 Migration history:"
+	cd backend && uv run alembic history --verbose
 
 # ============================================================================
 # Installation
