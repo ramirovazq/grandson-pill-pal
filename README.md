@@ -26,6 +26,28 @@ In this context, developing applications specifically designed to support essent
 Develop a data architecture capable of ingesting historical data on traffic incidents in Mexico City, starting from 2014 (https://datos.cdmx.gob.mx/dataset/incidentes-viales-c5) up to the most recent available records. This architecture should support data ingestion, processing, and analysis. The final product should be a visual dashboard highlighting the days and hours with the highest incidence, the top neighborhoods with the most reported incidents, and offer interactive insights into categories and frequency patterns within the data.
 </p>
 
+## 3. AI System Development
+
+
+<p align="justify"> The development of this application was strongly supported by the use of AI-powered coding assistants, primarily <strong>Antigravity</strong> and <strong>Cursor</strong>, which were used throughout the design, implementation, and deployment phases of the project. These tools enabled faster iteration, code validation, and architectural decision-making. </p> <p align="justify"> The development process followed an iterative and AI-assisted workflow, structured as follows: </p>
+
+1. Initial Frontend Generation
+The frontend was initially generated using a prompt-driven approach. A high-level prompt was used to define the core user experience, focusing on a health-oriented web service (mobile-friendly) that allows users to input medical prescriptions through a central text field. The interface was intentionally designed to be friendly and approachable, targeting younger users who assist older adults in following medical prescriptions.
+
+2. Iterative Frontend Refinement
+The frontend was refined iteratively using additional prompts to introduce usability and accessibility improvements. These iterations included features such as bilingual support (English and Spanish), a language switcher, and dark mode support. Further refinements introduced a multi-step flow where users are required to validate each extracted prescription item before proceeding.
+
+3. Frontend Validation and AI Integration Design
+Once the frontend structure was stabilized, it was connected to a source code repository and integrated with coding assistants. At this stage, unit tests were introduced for the frontend to ensure correctness and stability. Based on the validated frontend flow, API specifications were generated to align backend behavior with the expected application workflow.
+
+4. Prompt Engineering and AI Behavior Prototyping
+To validate the AI-driven prescription parsing logic, a Jupyter Notebook was created using a set of real-world medical prescriptions as input examples. Prompt engineering was performed iteratively to achieve accurate medication extraction and structuring. ChatGPT was used in parallel to clarify agent behavior and refine the prompt logic for consistent and reliable outputs.
+
+5. Backend Development and Data Persistence
+Backend development was initiated based on the previously defined API specifications. The system initially used SQLite for rapid prototyping and was later migrated to PostgreSQL to support scalability and production-readiness. Unit tests were continuously added throughout this phase to ensure functional correctness at each development step.
+
+6. Containerization and Deployment Preparation
+AI coding assistants were used to containerize the entire application, ensuring consistency across environments. Finally, the assistants supported the generation of deployment configuration files, enabling the project to be prepared for production deployment.
 
 
 ## Features
