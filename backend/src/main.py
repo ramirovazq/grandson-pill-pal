@@ -1,9 +1,12 @@
 """FastAPI application entry point."""
 
 from contextlib import asynccontextmanager
+import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from starlette.responses import FileResponse
 
 from src.config import settings
 from src.db import create_db_and_tables
@@ -45,43 +48,11 @@ app = FastAPI(
 
 A medication reminder service for helping loved ones (especially grandparents) 
 remember to take their pills on time.
-
-### Features
-
-- **Create prescriptions** with multiple medication items
-- **Schedule SMS reminders** to be sent at appropriate times
-- **Multi-language support** (English and Spanish)
-- **Flexible scheduling** with customizable reminder times
-
-### Getting Started
-
-1. Create a prescription with `POST /api/v1/prescriptions`
-2. View reminders with `GET /api/v1/prescriptions/{id}/reminders`
-3. Update prescription status with `PATCH /api/v1/prescriptions/{id}/status`
-
-### Authentication
-
-Currently, no authentication is required. Future versions will include API key authentication.
     """,
     openapi_url=f"{settings.api_prefix}/openapi.json",
     docs_url=f"{settings.api_prefix}/docs",
     redoc_url=f"{settings.api_prefix}/redoc",
     openapi_tags=tags_metadata,
-    contact={
-        "name": "Grandson Pill Pal Support",
-        "url": "https://github.com/grandson-pill-pal",
-        "email": "support@grandsonpillpal.example.com",
-    },
-    license_info={
-        "name": "MIT",
-        "url": "https://opensource.org/licenses/MIT",
-    },
-    swagger_ui_parameters={
-        "defaultModelsExpandDepth": -1,  # Hide schemas section by default
-        "docExpansion": "list",  # Expand operations list
-        "filter": True,  # Enable filtering
-        "syntaxHighlight.theme": "monokai",  # Syntax highlighting theme
-    },
 )
 
 # Add CORS middleware
@@ -98,14 +69,39 @@ app.include_router(health_router, prefix=settings.api_prefix)
 app.include_router(prescriptions_router, prefix=settings.api_prefix)
 
 
-@app.get("/", include_in_schema=False)
-async def root() -> dict:
-    """Root endpoint - redirects to API docs."""
-    return {
-        "message": "Welcome to Grandson Pill Pal API",
-        "docs": f"{settings.api_prefix}/docs",
-        "version": settings.app_version,
-    }
+# Serve Frontend (Static Files)
+# Only if STATIC_DIR environment variable is set (used in monolithic Docker container)
+static_dir = os.getenv("STATIC_DIR")
+
+if static_dir and os.path.isdir(static_dir):
+    # Mount assets (JS, CSS, Images)
+    # Vite puts assets in /assets, so we mount it there
+    app.mount("/assets", StaticFiles(directory=f"{static_dir}/assets"), name="assets")
+    
+    # Catch-all route for SPA (Single Page Application)
+    # This ensures that any route not matched by API returns index.html
+    # so React Router can handle it on the client side.
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_spa(full_path: str):
+        # Allow requests to API docs/openapi to pass through if not caught above
+        # (Though API routes are checked first by FastAPI)
+        
+        # Determine if we should serve index.html
+        # Note: API routes are defined above, so they take precedence.
+        
+        # Serve index.html
+        return FileResponse(f"{static_dir}/index.html")
+
+else:
+    # Development mode (or standalone backend): Root redirects to docs
+    @app.get("/", include_in_schema=False)
+    async def root() -> dict:
+        """Root endpoint - redirects to API docs."""
+        return {
+            "message": "Welcome to Grandson Pill Pal API",
+            "docs": f"{settings.api_prefix}/docs",
+            "version": settings.app_version,
+        }
 
 
 if __name__ == "__main__":

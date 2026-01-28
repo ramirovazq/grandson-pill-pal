@@ -1,0 +1,77 @@
+# Monolithic Dockerfile
+# =====================
+# Combines Frontend, Backend, Extractor, and Database in one image.
+
+# Stage 1: Build Frontend
+FROM node:20-slim as frontend-builder
+WORKDIR /app/frontend
+# Install dependencies
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+# Copy source and build
+COPY frontend/ .
+# Fix for potential memory issues in build if any
+ENV NODE_OPTIONS="--max-old-space-size=2048"
+RUN npm run build
+
+# Stage 2: Runtime Environment
+FROM python:3.12-slim-bookworm
+
+# Install PostgreSQL and system dependencies
+# "postgresql" package installs the server. "libpq-dev" for python driver if needed (psycopg2 binary handles it usually)
+# "curl" for healthchecks
+RUN apt-get update && apt-get install -y \
+    postgresql \
+    postgresql-contrib \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv (Python package manager)
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# Set working directory
+WORKDIR /app
+
+# Copy Backend dependencies
+COPY backend/pyproject.toml backend/uv.lock ./
+
+# Install Python dependencies
+# We use system python environment for simplicity in this monolith
+ENV UV_PROJECT_ENVIRONMENT="/usr/local"
+RUN uv sync --frozen --no-dev
+
+# Copy Backend Code
+COPY backend/src ./src
+COPY backend/alembic.ini .
+COPY backend/migrations ./migrations
+
+# Copy Frontend Build to static directory
+COPY --from=frontend-builder /app/frontend/dist ./static
+
+# Copy Entrypoint Script
+COPY scripts/monolith_entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+# Environment Variables
+ENV DATA_DIR="/data"
+ENV STATIC_DIR="/app/static"
+ENV USE_LOCAL_EXTRACTOR="true"
+ENV PYTHONPATH="/app"
+# Postgres envs (can be overridden)
+ENV POSTGRES_PASSWORD="pillpal_secret"
+# Ensure the backend connects to local postgres
+ENV DATABASE_URL="postgresql+asyncpg://pillpal:pillpal_secret@localhost:5432/pillpal"
+
+# Volume for Database Persistence
+# Note: Users MUST mount a volume to /var/lib/postgresql/data to persist data
+VOLUME ["/var/lib/postgresql/data"]
+
+# Expose Port 8000 (FastAPI serves everything)
+EXPOSE 8000
+
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+    CMD curl -f http://localhost:8000/api/v1/health || exit 1
+
+# Start
+ENTRYPOINT ["/app/entrypoint.sh"]

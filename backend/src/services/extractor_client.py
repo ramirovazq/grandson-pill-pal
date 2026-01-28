@@ -8,12 +8,17 @@ import os
 from typing import Optional
 
 import httpx
+from fastapi.concurrency import run_in_threadpool
 
-from src.services.prescription_extractor import ExtractionResponse, PrescriptionItem
+from src.services.prescription_extractor import (
+    ExtractionResponse,
+    PrescriptionItem,
+    get_service,
+)
 
 
 class PrescriptionExtractorClient:
-    """HTTP client for the Prescription Extractor Service."""
+    """HTTP or local client for the Prescription Extractor Service."""
 
     def __init__(self, base_url: Optional[str] = None):
         """
@@ -23,24 +28,27 @@ class PrescriptionExtractorClient:
             base_url: Service URL. Defaults to EXTRACTOR_SERVICE_URL env var
                       or http://localhost:8001
         """
+        self.use_local = os.getenv("USE_LOCAL_EXTRACTOR", "false").lower() == "true"
         self.base_url = base_url or os.getenv(
             "EXTRACTOR_SERVICE_URL", "http://localhost:8001"
         )
 
     async def extract(self, prescription_text: str) -> ExtractionResponse:
         """
-        Extract prescription data by calling the extractor service.
+        Extract prescription data.
 
         Args:
             prescription_text: The raw prescription text to analyze.
 
         Returns:
             ExtractionResponse with the extracted items.
-
-        Raises:
-            httpx.HTTPStatusError: If the service returns an error.
-            httpx.RequestError: If the service is unavailable.
         """
+        if self.use_local:
+            service = get_service()
+            # extract is a sync method (uses sync OpenAI client), so we runs it in threadpool
+            # to avoid blocking the async event loop
+            return await run_in_threadpool(service.extract, prescription_text)
+
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 f"{self.base_url}/extract",
@@ -57,6 +65,14 @@ class PrescriptionExtractorClient:
 
     async def health_check(self) -> bool:
         """Check if the extractor service is healthy."""
+        if self.use_local:
+            try:
+                # Basic check if service can be instantiated
+                get_service()
+                return True
+            except Exception:
+                return False
+
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.get(f"{self.base_url}/health", timeout=5.0)
