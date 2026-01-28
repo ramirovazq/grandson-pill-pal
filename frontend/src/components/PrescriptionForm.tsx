@@ -54,17 +54,53 @@ const initialNewItemState = {
   total_pills_required: "" as string | number,
 };
 
+// Country codes for phone input
+const countries = [
+  { code: "MX", name: "México", dialCode: "+52", flag: "🇲🇽" },
+  { code: "US", name: "United States", dialCode: "+1", flag: "🇺🇸" },
+  { code: "ES", name: "España", dialCode: "+34", flag: "🇪🇸" },
+  { code: "AR", name: "Argentina", dialCode: "+54", flag: "🇦🇷" },
+  { code: "CO", name: "Colombia", dialCode: "+57", flag: "🇨🇴" },
+  { code: "PE", name: "Perú", dialCode: "+51", flag: "🇵🇪" },
+  { code: "CL", name: "Chile", dialCode: "+56", flag: "🇨🇱" },
+  { code: "EC", name: "Ecuador", dialCode: "+593", flag: "🇪🇨" },
+  { code: "VE", name: "Venezuela", dialCode: "+58", flag: "🇻🇪" },
+  { code: "GT", name: "Guatemala", dialCode: "+502", flag: "🇬🇹" },
+  { code: "CU", name: "Cuba", dialCode: "+53", flag: "🇨🇺" },
+  { code: "BO", name: "Bolivia", dialCode: "+591", flag: "🇧🇴" },
+  { code: "DO", name: "Dominican Republic", dialCode: "+1", flag: "🇩🇴" },
+  { code: "HN", name: "Honduras", dialCode: "+504", flag: "🇭🇳" },
+  { code: "PY", name: "Paraguay", dialCode: "+595", flag: "🇵🇾" },
+  { code: "SV", name: "El Salvador", dialCode: "+503", flag: "🇸🇻" },
+  { code: "NI", name: "Nicaragua", dialCode: "+505", flag: "🇳🇮" },
+  { code: "CR", name: "Costa Rica", dialCode: "+506", flag: "🇨🇷" },
+  { code: "PA", name: "Panamá", dialCode: "+507", flag: "🇵🇦" },
+  { code: "UY", name: "Uruguay", dialCode: "+598", flag: "🇺🇾" },
+  { code: "PR", name: "Puerto Rico", dialCode: "+1", flag: "🇵🇷" },
+  { code: "BR", name: "Brasil", dialCode: "+55", flag: "🇧🇷" },
+  { code: "CA", name: "Canada", dialCode: "+1", flag: "🇨🇦" },
+  { code: "GB", name: "United Kingdom", dialCode: "+44", flag: "🇬🇧" },
+  { code: "FR", name: "France", dialCode: "+33", flag: "🇫🇷" },
+  { code: "DE", name: "Germany", dialCode: "+49", flag: "🇩🇪" },
+  { code: "IT", name: "Italy", dialCode: "+39", flag: "🇮🇹" },
+  { code: "PT", name: "Portugal", dialCode: "+351", flag: "🇵🇹" },
+];
+
 const PrescriptionForm = ({ onSubmit, isLoading = false, showDebug = true }: PrescriptionFormProps) => {
   const [step, setStep] = useState<"prescription" | "extracting" | "validate" | "phone">("prescription");
   const [prescription, setPrescription] = useState("");
   const [items, setItems] = useState<ValidatedItem[]>([]);
   const [phone, setPhone] = useState("");
+  const [selectedCountry, setSelectedCountry] = useState(countries[0]); // Default to Mexico
   const [newItemForm, setNewItemForm] = useState(initialNewItemState);
   const [showNewItemForm, setShowNewItemForm] = useState(false);
   const [extractionError, setExtractionError] = useState<string | null>(null);
   const [debugResponse, setDebugResponse] = useState<ExtractionResponse | null>(null);
   const [debugExpanded, setDebugExpanded] = useState(true);
   const { t } = useLanguage();
+  
+  // Full phone number with country code
+  const fullPhoneNumber = phone ? `${selectedCountry.dialCode} ${phone}` : "";
 
   const handlePrescriptionNext = async () => {
     if (!prescription.trim()) return;
@@ -158,7 +194,8 @@ const PrescriptionForm = ({ onSubmit, isLoading = false, showDebug = true }: Pre
       const prescriptionItems: PrescriptionItemInput[] = items.map(item => ({
         text: item.raw_prescription_text,
       }));
-      onSubmit({ items: prescriptionItems, phone });
+      // Use full phone number with country code
+      onSubmit({ items: prescriptionItems, phone: fullPhoneNumber });
     }
   };
 
@@ -682,42 +719,115 @@ const PrescriptionForm = ({ onSubmit, isLoading = false, showDebug = true }: Pre
             </p>
           </div>
 
-          <div className="bg-card rounded-2xl p-4 shadow-card border border-border">
-            <div className="flex items-start gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <CheckCircle className="w-5 h-5 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-foreground">{t("itemsValidated")} ({items.length})</p>
-                <ul className="text-sm text-muted-foreground mt-1 space-y-1">
-                  {items.slice(0, 3).map((item) => (
-                    <li key={item.id} className="line-clamp-1 flex items-center gap-2">
-                      {getItemIcon(item.item_type)}
-                      {item.item_name_complete}
-                    </li>
+          {/* Phone input - Split box layout */}
+          <div className="rounded-xl border-2 border-secondary overflow-hidden">
+            <div className="flex">
+              {/* Left side: Country selector */}
+              <div className="w-1/3 md:w-1/4 p-4 bg-card border-r border-border">
+                <label className="text-xs font-medium text-muted-foreground mb-2 block">
+                  {t("selectCountry") || "Country"}
+                </label>
+                <select
+                  value={selectedCountry.code}
+                  onChange={(e) => {
+                    const country = countries.find(c => c.code === e.target.value);
+                    if (country) setSelectedCountry(country);
+                  }}
+                  className="w-full h-12 px-2 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-secondary"
+                >
+                  {countries.map((country) => (
+                    <option key={country.code} value={country.code}>
+                      {country.flag} {country.dialCode}
+                    </option>
                   ))}
-                  {items.length > 3 && (
-                    <li className="text-primary">+{items.length - 3} {t("moreItems")}</li>
-                  )}
-                </ul>
+                </select>
+                <p className="text-xs text-muted-foreground mt-2 truncate">
+                  {selectedCountry.name}
+                </p>
+              </div>
+              
+              {/* Right side: Phone number */}
+              <div className="flex-1 p-4 bg-secondary/5">
+                <label className="text-xs font-medium text-muted-foreground mb-2 block">
+                  {t("phoneNumber") || "Phone number"}
+                </label>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-semibold text-secondary">
+                    {selectedCountry.dialCode}
+                  </span>
+                  <Input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="555 123 4567"
+                    className="flex-1 h-12 text-lg px-3 rounded-lg border-2 border-secondary/30 bg-background focus:border-secondary focus:ring-2 focus:ring-secondary/20 font-semibold"
+                  />
+                </div>
               </div>
             </div>
-            <button 
-              onClick={() => setStep("validate")}
-              className="text-sm text-primary hover:underline"
-            >
-              {t("editItems")}
-            </button>
           </div>
 
-          <div className="relative">
-            <Input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="+1 (555) 123-4567"
-              className="h-16 text-xl px-6 rounded-2xl border-2 border-border bg-card shadow-card focus:border-secondary focus:ring-4 focus:ring-secondary/20 transition-all duration-300 text-center font-semibold"
-            />
+          {/* Validated items summary - showing form details */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-primary" />
+                {t("itemsValidated")} ({items.length})
+              </p>
+              <button 
+                onClick={() => setStep("validate")}
+                className="text-sm text-primary hover:underline"
+              >
+                {t("editItems")}
+              </button>
+            </div>
+            
+            <div className="space-y-2">
+              {items.map((item, index) => (
+                <div 
+                  key={item.id}
+                  className="bg-card rounded-lg border border-border p-3"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-sm font-bold text-primary">
+                      {index + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        {getItemIcon(item.item_type)}
+                        <span className="font-medium text-sm">{item.item_name_complete}</span>
+                      </div>
+                      
+                      {/* Show medication/food details */}
+                      {(item.item_type === "medication" || item.item_type === "food") && (
+                        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                          {item.item_type === "medication" && item.pills_per_dose !== null && (
+                            <span className="bg-muted px-2 py-0.5 rounded">
+                              {item.pills_per_dose} {t("pillsPerDose")}
+                            </span>
+                          )}
+                          {item.doses_per_day !== null && (
+                            <span className="bg-muted px-2 py-0.5 rounded">
+                              {item.doses_per_day}x/{t("day") || "day"}
+                            </span>
+                          )}
+                          {item.treatment_duration_days !== null && (
+                            <span className="bg-muted px-2 py-0.5 rounded">
+                              {item.treatment_duration_days} {t("durationDays")}
+                            </span>
+                          )}
+                          {item.item_type === "medication" && item.total_pills_required !== null && (
+                            <span className="bg-muted px-2 py-0.5 rounded">
+                              = {item.total_pills_required} {t("totalPills")}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground">

@@ -41,6 +41,8 @@ export const translations: Translations = {
   // Phone form
   phoneTitle: { en: "Where should we send reminders? 📱", es: "¿A dónde enviamos los recordatorios? 📱" },
   phoneSubtitle: { en: "We'll text them friendly reminders so they never miss a dose!", es: "¡Les enviaremos recordatorios amigables para que nunca olviden una dosis!" },
+  selectCountry: { en: "Select country", es: "Selecciona país" },
+  phoneNumber: { en: "Phone number", es: "Número de teléfono" },
   prescriptionSaved: { en: "Prescription saved:", es: "Receta guardada:" },
   editPrescription: { en: "← Edit prescription", es: "← Editar receta" },
   smartTiming: { en: "Smart timing", es: "Horarios inteligentes" },
@@ -77,7 +79,8 @@ export const translations: Translations = {
   itemNameComplete: { en: "Full description", es: "Descripción completa" },
   pillsPerDose: { en: "Pills/dose", es: "Pastillas/dosis" },
   dosesPerDay: { en: "Times/day", es: "Veces/día" },
-  durationDays: { en: "Duration (days)", es: "Duración (días)" },
+  durationDays: { en: "days", es: "días" },
+  day: { en: "day", es: "día" },
   totalPills: { en: "Total pills", es: "Total pastillas" },
   originalText: { en: "Original", es: "Original" },
   confidence: { en: "Confidence", es: "Confianza" },

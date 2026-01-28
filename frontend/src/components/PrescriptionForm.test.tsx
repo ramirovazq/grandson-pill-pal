@@ -386,7 +386,7 @@ describe("PrescriptionForm", () => {
 
       expect(screen.getByText("Step 3 of 3")).toBeInTheDocument();
       expect(
-        screen.getByPlaceholderText(/\+1 \(555\) 123-4567/i)
+        screen.getByPlaceholderText(/555 123 4567/i)
       ).toBeInTheDocument();
     });
 
@@ -402,8 +402,8 @@ describe("PrescriptionForm", () => {
     it("should enable submit button when phone is entered", async () => {
       await goToPhoneStep();
 
-      const phoneInput = screen.getByPlaceholderText(/\+1 \(555\) 123-4567/i);
-      await userEvent.type(phoneInput, "+1 555 123 4567");
+      const phoneInput = screen.getByPlaceholderText(/555 123 4567/i);
+      await userEvent.type(phoneInput, "5551234567");
 
       const submitButton = screen.getByRole("button", {
         name: /Start Sending Reminders/i,
@@ -414,8 +414,8 @@ describe("PrescriptionForm", () => {
     it("should call onSubmit with items and phone when submitted", async () => {
       await goToPhoneStep();
 
-      const phoneInput = screen.getByPlaceholderText(/\+1 \(555\) 123-4567/i);
-      await userEvent.type(phoneInput, "+1 555 123 4567");
+      const phoneInput = screen.getByPlaceholderText(/555 123 4567/i);
+      await userEvent.type(phoneInput, "5551234567");
 
       const submitButton = screen.getByRole("button", {
         name: /Start Sending Reminders/i,
@@ -425,7 +425,7 @@ describe("PrescriptionForm", () => {
       expect(mockOnSubmit).toHaveBeenCalledTimes(1);
       expect(mockOnSubmit).toHaveBeenCalledWith({
         items: [{ text: "Take 1 pill" }],
-        phone: "+1 555 123 4567",
+        phone: "+52 5551234567", // Default country is Mexico (+52)
       });
     });
 
@@ -480,8 +480,8 @@ describe("PrescriptionForm", () => {
       });
       await userEvent.click(nextButton2);
 
-      const phoneInput = screen.getByPlaceholderText(/\+1 \(555\) 123-4567/i);
-      await userEvent.type(phoneInput, "+1 555 123 4567");
+      const phoneInput = screen.getByPlaceholderText(/555 123 4567/i);
+      await userEvent.type(phoneInput, "5551234567");
 
       // Submit button should show loading state and be disabled
       expect(screen.getByText(/Sending/i)).toBeInTheDocument();
