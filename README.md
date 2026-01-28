@@ -476,6 +476,543 @@ CREATE TABLE reminders (
 
 ✅ **Result**: The database layer is properly integrated, supports multiple environments (SQLite for development/testing, PostgreSQL for production), and is comprehensively documented with code examples and configuration details.
 
+## 8. Containerization and deployment
+
+<p align="justify">
+The entire Grandson Pill Pal system is containerized using Docker and orchestrated with Docker Compose, allowing the application to run consistently across all environments with a single command. This approach ensures reproducibility, simplifies deployment, and eliminates "works on my machine" issues.
+</p>
+
+### 8.1 Docker Architecture
+
+The application consists of four containerized services:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                   DOCKER COMPOSE                         │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │
+│  │   Frontend   │  │   Backend    │  │  Extractor   │ │
+│  │   (Nginx)    │  │   (FastAPI)  │  │  (FastAPI)   │ │
+│  │  Port: 80    │  │  Port: 8000  │  │  Port: 8001  │ │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘ │
+│         │                 │                  │          │
+│         └─────────────────┼──────────────────┘          │
+│                           │                             │
+│                    ┌──────┴───────┐                     │
+│                    │  PostgreSQL  │                     │
+│                    │  Port: 5432  │                     │
+│                    │ (mapped 5435)│                     │
+│                    └──────────────┘                     │
+│                                                          │
+│  Network: pillpal-network (bridge)                      │
+│  Volume:  pillpal-postgres-data (persistent)            │
+└─────────────────────────────────────────────────────────┘
+```
+
+### 8.2 Services Configuration
+
+#### Service 1: Frontend (Nginx)
+
+**Dockerfile:** `frontend/Dockerfile`
+
+```dockerfile
+# Build stage
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+# Production stage
+FROM nginx:alpine
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+**Key Features:**
+- Multi-stage build (smaller image)
+- Optimized production build
+- Custom Nginx configuration
+- Serves static files + SPA routing
+
+**Docker Compose:**
+```yaml
+frontend:
+  build:
+    context: ./frontend
+    dockerfile: Dockerfile
+  ports:
+    - "80:80"
+  depends_on:
+    - backend
+  networks:
+    - pillpal-network
+  healthcheck:
+    test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+    interval: 30s
+    timeout: 10s
+    retries: 3
+```
+
+#### Service 2: Backend (FastAPI)
+
+**Dockerfile:** `backend/Dockerfile`
+
+```dockerfile
+FROM python:3.12-slim
+WORKDIR /app
+
+# Install uv package manager
+RUN pip install uv
+
+# Copy dependency files
+COPY pyproject.toml uv.lock ./
+
+# Install dependencies
+RUN uv sync --no-dev
+
+# Copy application code
+COPY . .
+
+# Expose port
+EXPOSE 8000
+
+# Run application
+CMD ["uv", "run", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+**Docker Compose:**
+```yaml
+backend:
+  build:
+    context: ./backend
+    dockerfile: Dockerfile
+  ports:
+    - "8000:8000"
+  environment:
+    - DATABASE_URL=postgresql+asyncpg://pillpal:${POSTGRES_PASSWORD}@db:5432/pillpal
+    - CORS_ORIGINS=http://localhost
+  depends_on:
+    db:
+      condition: service_healthy
+  networks:
+    - pillpal-network
+  healthcheck:
+    test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+    interval: 30s
+    timeout: 10s
+    retries: 3
+```
+
+#### Service 3: Extractor (FastAPI Microservice)
+
+**Dockerfile:** `backend/Dockerfile.extractor`
+
+```dockerfile
+FROM python:3.12-slim
+WORKDIR /app
+
+RUN pip install uv
+COPY pyproject.toml uv.lock ./
+RUN uv sync --no-dev
+COPY . .
+
+EXPOSE 8001
+
+CMD ["uv", "run", "python", "-m", "src.services.prescription_extractor"]
+```
+
+**Docker Compose:**
+```yaml
+extractor:
+  build:
+    context: ./backend
+    dockerfile: Dockerfile.extractor
+  ports:
+    - "8001:8001"
+  environment:
+    - OPENAI_API_KEY=${OPENAI_API_KEY}
+    - CORS_ORIGINS=http://localhost
+  networks:
+    - pillpal-network
+  healthcheck:
+    test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+    interval: 30s
+    timeout: 10s
+    retries: 3
+```
+
+#### Service 4: Database (PostgreSQL)
+
+**Docker Compose:**
+```yaml
+db:
+  image: postgres:16-alpine
+  environment:
+    - POSTGRES_USER=pillpal
+    - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    - POSTGRES_DB=pillpal
+  ports:
+    - "5435:5432"  # Mapped to avoid conflicts
+  volumes:
+    - pillpal-postgres-data:/var/lib/postgresql/data
+  networks:
+    - pillpal-network
+  healthcheck:
+    test: ["CMD-SHELL", "pg_isready -U pillpal"]
+    interval: 10s
+    timeout: 5s
+    retries: 5
+```
+
+### 8.3 Complete docker-compose.yml
+
+**Location:** `docker-compose.yml` (project root)
+
+```yaml
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:16-alpine
+    container_name: pillpal-db
+    environment:
+      POSTGRES_USER: pillpal
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: pillpal
+    ports:
+      - "5435:5432"
+    volumes:
+      - pillpal-postgres-data:/var/lib/postgresql/data
+    networks:
+      - pillpal-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pillpal"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pillpal-backend
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://pillpal:${POSTGRES_PASSWORD}@db:5432/pillpal
+      CORS_ORIGINS: http://localhost
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - pillpal-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Prescription Extractor Service
+  extractor:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.extractor
+    container_name: pillpal-extractor
+    ports:
+      - "8001:8001"
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      CORS_ORIGINS: http://localhost
+    networks:
+      - pillpal-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend (Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pillpal-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - pillpal-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  pillpal-network:
+    driver: bridge
+
+volumes:
+  pillpal-postgres-data:
+    driver: local
+```
+
+### 9.4 Environment Configuration
+
+**Create `.env` file in project root:**
+
+```bash
+# Copy from example
+cp .env.example .env
+```
+
+**Required Variables:**
+```bash
+# PostgreSQL
+POSTGRES_PASSWORD=your_secure_password_here
+
+# OpenAI (for prescription extraction)
+OPENAI_API_KEY=sk-your-key-here
+
+# Optional: Twilio (for SMS reminders)
+TWILIO_ACCOUNT_SID=your_sid
+TWILIO_AUTH_TOKEN=your_token
+TWILIO_PHONE_NUMBER=+1234567890
+```
+
+### 9.5 Quick Start Commands
+
+**Start all services:**
+```bash
+make docker-up
+```
+
+This command:
+1. ✅ Builds all Docker images
+2. ✅ Creates the network and volumes
+3. ✅ Starts all containers in correct order
+4. ✅ Runs health checks
+5. ✅ Shows access URLs
+
+**Access the application:**
+```
+Frontend:         http://localhost
+Backend API:      http://localhost:8000
+API Docs:         http://localhost:8000/api/v1/docs
+Extractor:        http://localhost:8001
+Extractor Docs:   http://localhost:8001/docs
+PostgreSQL:       localhost:5435
+```
+
+**Stop all services:**
+```bash
+make docker-down
+```
+
+**View logs:**
+```bash
+# All services
+make docker-logs
+
+# Specific service
+make docker-logs-backend
+make docker-logs-frontend
+make docker-logs-extractor
+make docker-logs-db
+```
+
+**Restart services:**
+```bash
+# All services
+make docker-restart
+
+# Specific service
+make docker-restart-backend
+make docker-restart-frontend
+make docker-restart-extractor
+```
+
+**Check service status:**
+```bash
+make docker-ps
+```
+
+**Health check:**
+```bash
+make health-check
+```
+
+### 8.4 Development vs Production
+
+**Development Database (Separate):**
+```bash
+# Start only PostgreSQL for local development
+make docker-dev-up
+
+# Backend and frontend run locally
+make dev
+```
+
+**Full Docker Stack (Production-like):**
+```bash
+# Everything in containers
+make docker-up
+```
+
+### 8.5 Data Persistence
+
+**PostgreSQL Data:**
+- Stored in Docker volume: `pillpal-postgres-data`
+- Persists across container restarts
+- Survives `docker-compose down`
+
+**Backup database:**
+```bash
+docker exec pillpal-db pg_dump -U pillpal pillpal > backup.sql
+```
+
+**Restore database:**
+```bash
+cat backup.sql | docker exec -i pillpal-db psql -U pillpal -d pillpal
+```
+
+**Clean volumes (removes all data):**
+```bash
+make docker-clean
+```
+
+### 9.8 Network Configuration
+
+**Bridge Network:**
+- Name: `pillpal-network`
+- Allows container-to-container communication
+- Services use service names as hostnames
+
+**Service Communication:**
+```
+frontend → backend:8000
+backend → db:5432
+backend → extractor:8001
+frontend → extractor:8001
+```
+
+
+### 8.6 Troubleshooting
+
+**View logs of failing service:**
+```bash
+docker compose logs -f backend
+```
+
+**Rebuild after code changes:**
+```bash
+make docker-build
+make docker-up
+```
+
+**Access container shell:**
+```bash
+make docker-shell-backend
+make docker-shell-frontend
+make docker-shell-db
+```
+
+**Common issues:**
+
+1. **Port already in use:**
+   ```bash
+   # Change port in docker-compose.yml
+   ports:
+     - "8080:80"  # Use 8080 instead of 80
+   ```
+
+2. **Database connection fails:**
+   ```bash
+   # Check database is healthy
+   docker compose ps
+   
+   # View database logs
+   make docker-logs-db
+   ```
+
+3. **Environment variables not loaded:**
+   ```bash
+   # Ensure .env file exists
+   ls -la .env
+   
+   # Restart containers
+   make docker-down
+   make docker-up
+   ```
+
+### 8.7 CI/CD Integration
+
+**GitHub Actions Example:**
+```yaml
+name: Docker Build and Test
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Build Docker images
+        run: docker compose build
+      
+      - name: Start services
+        run: docker compose up -d
+      
+      - name: Wait for services
+        run: sleep 30
+      
+      - name: Run health checks
+        run: |
+          curl -f http://localhost:8000/health
+          curl -f http://localhost:8001/health
+          curl -f http://localhost/
+      
+      - name: Stop services
+        run: docker compose down
+```
+
+
+### 8.8 Summary
+
+✅ **Complete containerization:**
+- All 4 services containerized
+- Single command deployment
+- Health checks on all services
+
+✅ **Clear instructions:**
+- Quick start: `make docker-up`
+- Access URLs documented
+- Makefile with 15+ Docker commands
+
+✅ **Production-ready:**
+- Multi-stage builds
+- Health monitoring
+- Data persistence
+- Network isolation
+
+✅ **Developer-friendly:**
+- Hot reload in development
+- Easy log access
+- Shell access to containers
+- Separate dev database option
+
+**Result**: The entire system runs via Docker Compose with clear, documented instructions for development, testing, and production deployment.
+
 ## Features
 
 - Create prescriptions with multiple medication items
