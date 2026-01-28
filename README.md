@@ -1,6 +1,32 @@
+# grandson-pill-pal
+
+This repository aims to generate an application that helps loved ones (especially grandparents) remember to take their pills on time.
+
 # Grandson Pill Pal
 
-A medication reminder application that helps loved ones (especially grandparents) remember to take their pills on time.
+---
+## Index
+
+- 1.[Description of the problem](#1-description-of-the-problem)
+- 2.[Objective](#2-objective)
+
+## 1. Description of the problem
+
+<p align="justify">
+In recent years, technological advancement has accelerated significantly, along with the proliferation of digital tools and applications. However, this rapid growth has also widened the gap in technology usage among older adults, as many of them either refrain from adopting new technologies or are limited to basic functionalities. This digital divide poses challenges to their autonomy and access to services that increasingly rely on digital platforms.
+</p>
+
+<p align="justify">
+In this context, developing applications specifically designed to support essential daily activities for older adults represents an opportunity to improve their quality of life. By involving close family members—such as children, grandchildren, or caregivers—in the use and management of these applications, it becomes possible to create a supportive technological ecosystem that promotes inclusion, assistance, and a stronger connection between older adults and their immediate support network.
+</p>
+
+## 2. Objective
+
+<p align="justify">
+Develop a data architecture capable of ingesting historical data on traffic incidents in Mexico City, starting from 2014 (https://datos.cdmx.gob.mx/dataset/incidentes-viales-c5) up to the most recent available records. This architecture should support data ingestion, processing, and analysis. The final product should be a visual dashboard highlighting the days and hours with the highest incidence, the top neighborhoods with the most reported incidents, and offer interactive insights into categories and frequency patterns within the data.
+</p>
+
+
 
 ## Features
 
