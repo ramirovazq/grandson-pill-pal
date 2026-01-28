@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { 
   Pill, 
@@ -12,6 +11,8 @@ import {
   Heart, 
   Clock, 
   CheckCircle, 
+  CheckCircle2,
+  Circle,
   Edit3, 
   Plus, 
   Trash2, 
@@ -307,155 +308,180 @@ const PrescriptionForm = ({ onSubmit, isLoading = false, showDebug = true }: Pre
             {items.map((item, index) => (
               <div 
                 key={item.id}
-                className={`p-4 rounded-xl border-2 transition-all duration-300 ${
+                className={`rounded-xl border-2 transition-all duration-300 overflow-hidden ${
                   item.validated 
-                    ? "border-primary bg-primary/5" 
-                    : "border-border bg-card"
+                    ? "border-primary" 
+                    : "border-border"
                 }`}
               >
-                {/* Header with checkbox, item number, and badges */}
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <Checkbox
-                      id={item.id}
-                      checked={item.validated}
-                      onCheckedChange={() => toggleItem(item.id)}
-                    />
-                    <span className="font-semibold text-primary text-lg">#{index + 1}</span>
-                    {getConfidenceBadge(item.confidence_level, item.requires_human_review)}
-                  </div>
-                  <button
-                    onClick={() => removeItem(item.id)}
-                    className="p-2 text-muted-foreground hover:text-destructive transition-colors rounded-lg hover:bg-destructive/10"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {/* Editable fields */}
-                <div className="space-y-3">
-                  {/* Row 1: Item Type and Full description */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                        {t("itemType") || "Type"}
-                      </label>
-                      <select
-                        value={item.item_type}
-                        onChange={(e) => updateItemField(item.id, "item_type", e.target.value as "medication" | "food" | "procedure")}
-                        className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                <div className="flex">
+                  {/* Left side: Form fields */}
+                  <div className={`flex-1 p-4 transition-colors ${
+                    item.validated ? "bg-primary/5" : "bg-card"
+                  }`}>
+                    {/* Header with item number, badges, and delete button */}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <span className="font-semibold text-primary text-lg">#{index + 1}</span>
+                        {getConfidenceBadge(item.confidence_level, item.requires_human_review)}
+                      </div>
+                      <button
+                        onClick={() => removeItem(item.id)}
+                        className="p-2 text-muted-foreground hover:text-destructive transition-colors rounded-lg hover:bg-destructive/10"
                       >
-                        <option value="medication">💊 {t("medication")}</option>
-                        <option value="food">🍎 {t("food")}</option>
-                        <option value="procedure">🩺 {t("procedure")}</option>
-                      </select>
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
-                    {/* item_name is stored but hidden from UI - Full description is used instead */}
-                    <div className="md:col-span-2">
-                      <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                        {t("itemNameComplete") || "Full description"}
-                      </label>
-                      <Input
-                        value={item.item_name_complete}
-                        onChange={(e) => updateItemField(item.id, "item_name_complete", e.target.value)}
-                        className="h-10 rounded-lg"
-                        placeholder="e.g., Omeprazol 20mg capsules"
-                      />
-                    </div>
-                  </div>
 
-                  {/* Row 2: Numeric fields (for medication/food) */}
-                  {(item.item_type === "medication" || item.item_type === "food") && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {item.item_type === "medication" && (
+                    {/* Editable fields */}
+                    <div className="space-y-3">
+                      {/* Row 1: Item Type and Full description */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <div>
                           <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                            {t("pillsPerDose")}
+                            {t("itemType") || "Type"}
                           </label>
                           <select
-                            value={item.pills_per_dose ?? ""}
-                            onChange={(e) => updateItemField(item.id, "pills_per_dose", e.target.value)}
+                            value={item.item_type}
+                            onChange={(e) => updateItemField(item.id, "item_type", e.target.value as "medication" | "food" | "procedure")}
                             className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                           >
-                            <option value="">--</option>
-                            <option value="0.25">1/4</option>
-                            <option value="0.5">1/2</option>
-                            <option value="0.75">3/4</option>
-                            <option value="1">1</option>
-                            <option value="1.5">1 1/2</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5">5</option>
-                            <option value="6">6</option>
-                            <option value="7">7</option>
-                            <option value="8">8</option>
-                            <option value="9">9</option>
-                            <option value="10">10</option>
+                            <option value="medication">💊 {t("medication")}</option>
+                            <option value="food">🍎 {t("food")}</option>
+                            <option value="procedure">🩺 {t("procedure")}</option>
                           </select>
                         </div>
-                      )}
-                      <div>
-                        <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                          {t("dosesPerDay")}
-                        </label>
-                        <select
-                          value={item.doses_per_day ?? ""}
-                          onChange={(e) => updateItemField(item.id, "doses_per_day", e.target.value)}
-                          className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                        >
-                          <option value="">--</option>
-                          <option value="1">1</option>
-                          <option value="2">2</option>
-                          <option value="3">3</option>
-                          <option value="4">4</option>
-                          <option value="5">5</option>
-                          <option value="6">6</option>
-                          <option value="7">7</option>
-                          <option value="8">8</option>
-                          <option value="9">9</option>
-                          <option value="10">10</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                          {t("durationDays")}
-                        </label>
-                        <Input
-                          type="number"
-                          step="1"
-                          min="0"
-                          value={item.treatment_duration_days ?? ""}
-                          onChange={(e) => updateItemField(item.id, "treatment_duration_days", e.target.value)}
-                          className="h-10 rounded-lg"
-                          placeholder="0"
-                        />
-                      </div>
-                      {item.item_type === "medication" && (
-                        <div>
+                        {/* item_name is stored but hidden from UI - Full description is used instead */}
+                        <div className="md:col-span-2">
                           <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                            {t("totalPills")}
+                            {t("itemNameComplete") || "Full description"}
                           </label>
                           <Input
-                            type="number"
-                            step="1"
-                            min="0"
-                            value={item.total_pills_required ?? ""}
-                            onChange={(e) => updateItemField(item.id, "total_pills_required", e.target.value)}
+                            value={item.item_name_complete}
+                            onChange={(e) => updateItemField(item.id, "item_name_complete", e.target.value)}
                             className="h-10 rounded-lg"
-                            placeholder="0"
+                            placeholder="e.g., Omeprazol 20mg capsules"
                           />
                         </div>
-                      )}
-                    </div>
-                  )}
+                      </div>
 
-                  {/* Read-only section */}
-                  <div className="mt-3 pt-3 border-t border-dashed border-muted-foreground/20">
-                    <p className="text-xs text-muted-foreground/70 italic">
-                      <span className="font-medium not-italic">{t("originalText") || "Original"}:</span> "{item.raw_prescription_text}"
-                    </p>
+                      {/* Row 2: Numeric fields (for medication/food) */}
+                      {(item.item_type === "medication" || item.item_type === "food") && (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          {item.item_type === "medication" && (
+                            <div>
+                              <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                                {t("pillsPerDose")}
+                              </label>
+                              <select
+                                value={item.pills_per_dose ?? ""}
+                                onChange={(e) => updateItemField(item.id, "pills_per_dose", e.target.value)}
+                                className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                              >
+                                <option value="">--</option>
+                                <option value="0.25">1/4</option>
+                                <option value="0.5">1/2</option>
+                                <option value="0.75">3/4</option>
+                                <option value="1">1</option>
+                                <option value="1.5">1 1/2</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                              </select>
+                            </div>
+                          )}
+                          <div>
+                            <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                              {t("dosesPerDay")}
+                            </label>
+                            <select
+                              value={item.doses_per_day ?? ""}
+                              onChange={(e) => updateItemField(item.id, "doses_per_day", e.target.value)}
+                              className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                            >
+                              <option value="">--</option>
+                              <option value="1">1</option>
+                              <option value="2">2</option>
+                              <option value="3">3</option>
+                              <option value="4">4</option>
+                              <option value="5">5</option>
+                              <option value="6">6</option>
+                              <option value="7">7</option>
+                              <option value="8">8</option>
+                              <option value="9">9</option>
+                              <option value="10">10</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                              {t("durationDays")}
+                            </label>
+                            <Input
+                              type="number"
+                              step="1"
+                              min="0"
+                              value={item.treatment_duration_days ?? ""}
+                              onChange={(e) => updateItemField(item.id, "treatment_duration_days", e.target.value)}
+                              className="h-10 rounded-lg"
+                              placeholder="0"
+                            />
+                          </div>
+                          {item.item_type === "medication" && (
+                            <div>
+                              <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                                {t("totalPills")}
+                              </label>
+                              <Input
+                                type="number"
+                                step="1"
+                                min="0"
+                                value={item.total_pills_required ?? ""}
+                                onChange={(e) => updateItemField(item.id, "total_pills_required", e.target.value)}
+                                className="h-10 rounded-lg"
+                                placeholder="0"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Read-only section */}
+                      <div className="mt-3 pt-3 border-t border-dashed border-muted-foreground/20">
+                        <p className="text-xs text-muted-foreground/70 italic">
+                          <span className="font-medium not-italic">{t("originalText") || "Original"}:</span> "{item.raw_prescription_text}"
+                        </p>
+                      </div>
+                    </div>
                   </div>
+
+                  {/* Right side: Validation button */}
+                  <button
+                    onClick={() => toggleItem(item.id)}
+                    className={`w-20 md:w-24 flex flex-col items-center justify-center gap-2 transition-all duration-300 ${
+                      item.validated 
+                        ? "bg-primary text-primary-foreground" 
+                        : "bg-muted/50 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                    }`}
+                    title={item.validated ? t("clickToUnvalidate") || "Click to unvalidate" : t("clickToValidate") || "Click to validate"}
+                  >
+                    {item.validated ? (
+                      <>
+                        <CheckCircle2 className="w-8 h-8 md:w-10 md:h-10" />
+                        <span className="text-xs font-medium">{t("validated") || "OK"}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Circle className="w-8 h-8 md:w-10 md:h-10" />
+                        <span className="text-xs font-medium">{t("validate") || "Validate"}</span>
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
             ))}

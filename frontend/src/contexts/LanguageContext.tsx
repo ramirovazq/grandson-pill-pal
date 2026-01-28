@@ -85,6 +85,10 @@ export const translations: Translations = {
   mediumConfidence: { en: "Medium confidence", es: "Confianza media" },
   lowConfidence: { en: "Low confidence", es: "Baja confianza" },
   needsReview: { en: "Needs review", es: "Necesita revisión" },
+  validated: { en: "OK", es: "OK" },
+  validate: { en: "Validate", es: "Validar" },
+  clickToValidate: { en: "Click to validate", es: "Click para validar" },
+  clickToUnvalidate: { en: "Click to unvalidate", es: "Click para quitar validación" },
   
   // Errors
   errorTitle: { en: "Error", es: "Error" },

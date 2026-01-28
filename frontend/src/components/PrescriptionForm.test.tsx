@@ -239,11 +239,19 @@ describe("PrescriptionForm", () => {
       expect(badges.length).toBeGreaterThan(0);
     });
 
-    it("should have checkboxes for each item", async () => {
+    it("should have validate buttons for each item", async () => {
       await goToValidationStep();
 
-      const checkboxes = screen.getAllByRole("checkbox");
-      expect(checkboxes.length).toBe(2);
+      // Check that we have 2 items by looking for item numbers
+      expect(screen.getByText("#1")).toBeInTheDocument();
+      expect(screen.getByText("#2")).toBeInTheDocument();
+      
+      // Find validate buttons by looking for buttons with Circle icons
+      const allButtons = screen.getAllByRole("button");
+      const validateButtons = allButtons.filter((btn) => 
+        btn.querySelector(".lucide-circle") || btn.querySelector(".lucide-check-circle-2")
+      );
+      expect(validateButtons.length).toBe(2);
     });
 
     it("should disable next button until all items are validated", async () => {
@@ -255,12 +263,17 @@ describe("PrescriptionForm", () => {
       expect(nextButton).toBeDisabled();
     });
 
-    it("should enable next button when all items are checked", async () => {
+    it("should enable next button when all items are validated", async () => {
       await goToValidationStep();
 
-      const checkboxes = screen.getAllByRole("checkbox");
-      for (const checkbox of checkboxes) {
-        await userEvent.click(checkbox);
+      // Find validate buttons by looking for buttons with Circle icons
+      const allButtons = screen.getAllByRole("button");
+      const validateButtons = allButtons.filter((btn) => 
+        btn.querySelector(".lucide-circle")
+      );
+      
+      for (const validateBtn of validateButtons) {
+        await userEvent.click(validateBtn);
       }
 
       const nextButton = screen.getByRole("button", {
@@ -293,12 +306,20 @@ describe("PrescriptionForm", () => {
       // The text appears in multiple places (label and raw text), so use getAllByText
       const vitaminsTexts = screen.getAllByText(/Take vitamins daily/i);
       expect(vitaminsTexts.length).toBeGreaterThan(0);
-      // Manual items are auto-validated, so we should have 3 checkboxes
-      expect(screen.getAllByRole("checkbox").length).toBe(3);
+      
+      // We should now have 3 items total (2 from extraction + 1 manual)
+      // Check by counting item numbers (#1, #2, #3)
+      expect(screen.getByText("#1")).toBeInTheDocument();
+      expect(screen.getByText("#2")).toBeInTheDocument();
+      expect(screen.getByText("#3")).toBeInTheDocument();
     });
 
     it("should allow removing an item", async () => {
       await goToValidationStep();
+
+      // Initially we have 2 items
+      expect(screen.getByText("#1")).toBeInTheDocument();
+      expect(screen.getByText("#2")).toBeInTheDocument();
 
       // Find all delete buttons (with trash icon)
       const allButtons = screen.getAllByRole("button");
@@ -309,7 +330,9 @@ describe("PrescriptionForm", () => {
       expect(deleteButtons.length).toBe(2);
       await userEvent.click(deleteButtons[0]);
 
-      expect(screen.getAllByRole("checkbox").length).toBe(1);
+      // After removing, should have 1 item left (numbered #1)
+      expect(screen.getByText("#1")).toBeInTheDocument();
+      expect(screen.queryByText("#2")).not.toBeInTheDocument();
     });
 
     it("should go back to prescription step when edit is clicked", async () => {
@@ -344,9 +367,13 @@ describe("PrescriptionForm", () => {
         expect(screen.getByText("Step 2 of 3")).toBeInTheDocument();
       });
 
-      // Step 2: Validate all items
-      const checkbox = screen.getByRole("checkbox");
-      await userEvent.click(checkbox);
+      // Step 2: Validate all items - find the validate button (Circle icon)
+      const allButtons = screen.getAllByRole("button");
+      const validateButton = allButtons.find((btn) => 
+        btn.querySelector(".lucide-circle")
+      );
+      expect(validateButton).toBeDefined();
+      await userEvent.click(validateButton!);
 
       const nextButton2 = screen.getByRole("button", {
         name: /Next: Add Phone/i,
@@ -441,8 +468,12 @@ describe("PrescriptionForm", () => {
         expect(screen.getByText("Step 2 of 3")).toBeInTheDocument();
       });
 
-      const checkbox = screen.getByRole("checkbox");
-      await userEvent.click(checkbox);
+      // Find and click the validate button
+      const allButtons = screen.getAllByRole("button");
+      const validateButton = allButtons.find((btn) => 
+        btn.querySelector(".lucide-circle")
+      );
+      await userEvent.click(validateButton!);
 
       const nextButton2 = screen.getByRole("button", {
         name: /Next: Add Phone/i,
