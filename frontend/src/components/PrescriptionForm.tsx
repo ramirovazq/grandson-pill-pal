@@ -43,12 +43,23 @@ interface ValidatedItem extends ExtractedItem {
   validated: boolean;
 }
 
+// Initial state for new item form
+const initialNewItemState = {
+  item_type: "medication" as "medication" | "food" | "procedure",
+  item_name_complete: "",
+  pills_per_dose: "" as string | number,
+  doses_per_day: "" as string | number,
+  treatment_duration_days: "" as string | number,
+  total_pills_required: "" as string | number,
+};
+
 const PrescriptionForm = ({ onSubmit, isLoading = false, showDebug = true }: PrescriptionFormProps) => {
   const [step, setStep] = useState<"prescription" | "extracting" | "validate" | "phone">("prescription");
   const [prescription, setPrescription] = useState("");
   const [items, setItems] = useState<ValidatedItem[]>([]);
   const [phone, setPhone] = useState("");
-  const [newItem, setNewItem] = useState("");
+  const [newItemForm, setNewItemForm] = useState(initialNewItemState);
+  const [showNewItemForm, setShowNewItemForm] = useState(false);
   const [extractionError, setExtractionError] = useState<string | null>(null);
   const [debugResponse, setDebugResponse] = useState<ExtractionResponse | null>(null);
   const [debugExpanded, setDebugExpanded] = useState(true);
@@ -88,29 +99,49 @@ const PrescriptionForm = ({ onSubmit, isLoading = false, showDebug = true }: Pre
     ));
   };
 
+  const updateItemField = (id: string, field: keyof ValidatedItem, value: string | number | null) => {
+    setItems(items.map(item => {
+      if (item.id !== id) return item;
+      
+      // Handle numeric fields
+      if (field === "pills_per_dose" || field === "doses_per_day" || 
+          field === "treatment_duration_days" || field === "total_pills_required") {
+        const numValue = value === "" || value === null ? null : Number(value);
+        return { ...item, [field]: numValue };
+      }
+      
+      return { ...item, [field]: value };
+    }));
+  };
+
   const removeItem = (id: string) => {
     setItems(items.filter(item => item.id !== id));
   };
 
   const addItem = () => {
-    if (newItem.trim()) {
+    if (newItemForm.item_name_complete.trim()) {
       const manualItem: ValidatedItem = {
         id: `item-${Date.now()}`,
-        item_type: "medication",
-        item_name: newItem.trim(),
-        item_name_complete: newItem.trim(),
-        pills_per_dose: null,
-        doses_per_day: null,
-        treatment_duration_days: null,
-        total_pills_required: null,
-        raw_prescription_text: newItem.trim(),
-        confidence_level: "medium",
-        requires_human_review: true,
-        validated: false,
+        item_type: newItemForm.item_type,
+        item_name: newItemForm.item_name_complete.trim().split(" ")[0], // Extract first word as name
+        item_name_complete: newItemForm.item_name_complete.trim(),
+        pills_per_dose: newItemForm.pills_per_dose === "" ? null : Number(newItemForm.pills_per_dose),
+        doses_per_day: newItemForm.doses_per_day === "" ? null : Number(newItemForm.doses_per_day),
+        treatment_duration_days: newItemForm.treatment_duration_days === "" ? null : Number(newItemForm.treatment_duration_days),
+        total_pills_required: newItemForm.total_pills_required === "" ? null : Number(newItemForm.total_pills_required),
+        raw_prescription_text: `[Manual] ${newItemForm.item_name_complete.trim()}`,
+        confidence_level: "high", // Manual items are high confidence since user entered them
+        requires_human_review: false,
+        validated: true, // Auto-validate manual items
       };
       setItems([...items, manualItem]);
-      setNewItem("");
+      setNewItemForm(initialNewItemState);
+      setShowNewItemForm(false);
     }
+  };
+
+  const updateNewItemField = (field: keyof typeof initialNewItemState, value: string | number) => {
+    setNewItemForm(prev => ({ ...prev, [field]: value }));
   };
 
   const allValidated = items.length > 0 && items.every(item => item.validated);
@@ -167,20 +198,24 @@ const PrescriptionForm = ({ onSubmit, isLoading = false, showDebug = true }: Pre
       );
     }
     
+    // Only show badge for medium or low confidence (not for high)
+    if (confidence === "high") {
+      return null;
+    }
+    
     const colors: Record<string, string> = {
-      high: "bg-green-100 text-green-800",
       medium: "bg-yellow-100 text-yellow-800",
       low: "bg-red-100 text-red-800",
     };
     
     const labels: Record<string, string> = {
-      high: t("highConfidence"),
       medium: t("mediumConfidence"),
       low: t("lowConfidence"),
     };
     
     return (
       <span className={`text-xs px-2 py-0.5 rounded-full ${colors[confidence]}`}>
+        <AlertTriangle className="w-3 h-3 inline mr-1" />
         {labels[confidence]}
       </span>
     );
@@ -268,7 +303,7 @@ const PrescriptionForm = ({ onSubmit, isLoading = false, showDebug = true }: Pre
             </p>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             {items.map((item, index) => (
               <div 
                 key={item.id}
@@ -278,102 +313,305 @@ const PrescriptionForm = ({ onSubmit, isLoading = false, showDebug = true }: Pre
                     : "border-border bg-card"
                 }`}
               >
-                <div className="flex items-start gap-3">
-                  <Checkbox
-                    id={item.id}
-                    checked={item.validated}
-                    onCheckedChange={() => toggleItem(item.id)}
-                    className="mt-1"
-                  />
-                  <div className="flex-1 min-w-0 space-y-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold text-primary">#{index + 1}</span>
-                      {getItemTypeBadge(item.item_type)}
-                      {getConfidenceBadge(item.confidence_level, item.requires_human_review)}
-                    </div>
-                    <label 
-                      htmlFor={item.id}
-                      className={`block text-sm cursor-pointer font-medium ${
-                        item.validated ? "text-foreground" : "text-muted-foreground"
-                      }`}
-                    >
-                      {item.item_name_complete}
-                    </label>
-                    
-                    {/* Medication details */}
-                    {item.item_type === "medication" && (
-                      <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                        {item.pills_per_dose !== null && (
-                          <span className="bg-muted px-2 py-1 rounded">
-                            {item.pills_per_dose} {t("pillsPerDose")}
-                          </span>
-                        )}
-                        {item.doses_per_day !== null && (
-                          <span className="bg-muted px-2 py-1 rounded">
-                            {item.doses_per_day} {t("dosesPerDay")}
-                          </span>
-                        )}
-                        {item.treatment_duration_days !== null && (
-                          <span className="bg-muted px-2 py-1 rounded">
-                            {item.treatment_duration_days} {t("durationDays")}
-                          </span>
-                        )}
-                        {item.total_pills_required !== null && (
-                          <span className="bg-muted px-2 py-1 rounded">
-                            {item.total_pills_required} {t("totalPills")}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                    
-                    {/* Food details */}
-                    {item.item_type === "food" && (
-                      <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                        {item.doses_per_day !== null && (
-                          <span className="bg-muted px-2 py-1 rounded">
-                            {item.doses_per_day} {t("dosesPerDay")}
-                          </span>
-                        )}
-                        {item.treatment_duration_days !== null && (
-                          <span className="bg-muted px-2 py-1 rounded">
-                            {item.treatment_duration_days} {t("durationDays")}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                    
-                    <p className="text-xs text-muted-foreground/70 italic">
-                      "{item.raw_prescription_text}"
-                    </p>
+                {/* Header with checkbox, item number, and badges */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <Checkbox
+                      id={item.id}
+                      checked={item.validated}
+                      onCheckedChange={() => toggleItem(item.id)}
+                    />
+                    <span className="font-semibold text-primary text-lg">#{index + 1}</span>
+                    {getConfidenceBadge(item.confidence_level, item.requires_human_review)}
                   </div>
                   <button
                     onClick={() => removeItem(item.id)}
-                    className="p-1 text-muted-foreground hover:text-destructive transition-colors"
+                    className="p-2 text-muted-foreground hover:text-destructive transition-colors rounded-lg hover:bg-destructive/10"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
+                </div>
+
+                {/* Editable fields */}
+                <div className="space-y-3">
+                  {/* Row 1: Item Type and Full description */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                        {t("itemType") || "Type"}
+                      </label>
+                      <select
+                        value={item.item_type}
+                        onChange={(e) => updateItemField(item.id, "item_type", e.target.value as "medication" | "food" | "procedure")}
+                        className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      >
+                        <option value="medication">💊 {t("medication")}</option>
+                        <option value="food">🍎 {t("food")}</option>
+                        <option value="procedure">🩺 {t("procedure")}</option>
+                      </select>
+                    </div>
+                    {/* item_name is stored but hidden from UI - Full description is used instead */}
+                    <div className="md:col-span-2">
+                      <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                        {t("itemNameComplete") || "Full description"}
+                      </label>
+                      <Input
+                        value={item.item_name_complete}
+                        onChange={(e) => updateItemField(item.id, "item_name_complete", e.target.value)}
+                        className="h-10 rounded-lg"
+                        placeholder="e.g., Omeprazol 20mg capsules"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Row 2: Numeric fields (for medication/food) */}
+                  {(item.item_type === "medication" || item.item_type === "food") && (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {item.item_type === "medication" && (
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                            {t("pillsPerDose")}
+                          </label>
+                          <select
+                            value={item.pills_per_dose ?? ""}
+                            onChange={(e) => updateItemField(item.id, "pills_per_dose", e.target.value)}
+                            className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                          >
+                            <option value="">--</option>
+                            <option value="0.25">1/4</option>
+                            <option value="0.5">1/2</option>
+                            <option value="0.75">3/4</option>
+                            <option value="1">1</option>
+                            <option value="1.5">1 1/2</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                          </select>
+                        </div>
+                      )}
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                          {t("dosesPerDay")}
+                        </label>
+                        <select
+                          value={item.doses_per_day ?? ""}
+                          onChange={(e) => updateItemField(item.id, "doses_per_day", e.target.value)}
+                          className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                          <option value="">--</option>
+                          <option value="1">1</option>
+                          <option value="2">2</option>
+                          <option value="3">3</option>
+                          <option value="4">4</option>
+                          <option value="5">5</option>
+                          <option value="6">6</option>
+                          <option value="7">7</option>
+                          <option value="8">8</option>
+                          <option value="9">9</option>
+                          <option value="10">10</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                          {t("durationDays")}
+                        </label>
+                        <Input
+                          type="number"
+                          step="1"
+                          min="0"
+                          value={item.treatment_duration_days ?? ""}
+                          onChange={(e) => updateItemField(item.id, "treatment_duration_days", e.target.value)}
+                          className="h-10 rounded-lg"
+                          placeholder="0"
+                        />
+                      </div>
+                      {item.item_type === "medication" && (
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                            {t("totalPills")}
+                          </label>
+                          <Input
+                            type="number"
+                            step="1"
+                            min="0"
+                            value={item.total_pills_required ?? ""}
+                            onChange={(e) => updateItemField(item.id, "total_pills_required", e.target.value)}
+                            className="h-10 rounded-lg"
+                            placeholder="0"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Read-only section */}
+                  <div className="mt-3 pt-3 border-t border-dashed border-muted-foreground/20">
+                    <p className="text-xs text-muted-foreground/70 italic">
+                      <span className="font-medium not-italic">{t("originalText") || "Original"}:</span> "{item.raw_prescription_text}"
+                    </p>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="flex gap-2">
-            <Input
-              value={newItem}
-              onChange={(e) => setNewItem(e.target.value)}
-              placeholder={t("addItemPlaceholder")}
-              className="flex-1 h-12 rounded-xl"
-              onKeyDown={(e) => e.key === "Enter" && addItem()}
-            />
-            <Button
-              onClick={addItem}
-              disabled={!newItem.trim()}
-              size="icon"
-              variant="outline"
-              className="h-12 w-12"
-            >
-              <Plus className="w-5 h-5" />
-            </Button>
+          {/* Add new item section */}
+          <div className="border-2 border-dashed border-muted-foreground/30 rounded-xl p-4">
+            {!showNewItemForm ? (
+              <button
+                onClick={() => setShowNewItemForm(true)}
+                className="w-full flex items-center justify-center gap-2 text-muted-foreground hover:text-primary transition-colors py-2"
+              >
+                <Plus className="w-5 h-5" />
+                <span>{t("addItemPlaceholder")}</span>
+              </button>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-sm">{t("addNewItem") || "Add new item"}</h4>
+                  <button
+                    onClick={() => {
+                      setShowNewItemForm(false);
+                      setNewItemForm(initialNewItemState);
+                    }}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Row 1: Type and Full description */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                      {t("itemType") || "Type"}
+                    </label>
+                    <select
+                      value={newItemForm.item_type}
+                      onChange={(e) => updateNewItemField("item_type", e.target.value as "medication" | "food" | "procedure")}
+                      className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                      <option value="medication">💊 {t("medication")}</option>
+                      <option value="food">🍎 {t("food")}</option>
+                      <option value="procedure">🩺 {t("procedure")}</option>
+                    </select>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                      {t("itemNameComplete") || "Full description"} *
+                    </label>
+                    <Input
+                      value={newItemForm.item_name_complete}
+                      onChange={(e) => updateNewItemField("item_name_complete", e.target.value)}
+                      className="h-10 rounded-lg"
+                      placeholder="e.g., Omeprazol 20mg capsules"
+                    />
+                  </div>
+                </div>
+
+                {/* Row 2: Numeric fields (for medication/food) */}
+                {(newItemForm.item_type === "medication" || newItemForm.item_type === "food") && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {newItemForm.item_type === "medication" && (
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                          {t("pillsPerDose")}
+                        </label>
+                        <select
+                          value={newItemForm.pills_per_dose}
+                          onChange={(e) => updateNewItemField("pills_per_dose", e.target.value)}
+                          className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                          <option value="">--</option>
+                          <option value="0.25">1/4</option>
+                          <option value="0.5">1/2</option>
+                          <option value="0.75">3/4</option>
+                          <option value="1">1</option>
+                          <option value="1.5">1 1/2</option>
+                          <option value="2">2</option>
+                          <option value="3">3</option>
+                          <option value="4">4</option>
+                          <option value="5">5</option>
+                          <option value="6">6</option>
+                          <option value="7">7</option>
+                          <option value="8">8</option>
+                          <option value="9">9</option>
+                          <option value="10">10</option>
+                        </select>
+                      </div>
+                    )}
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                        {t("dosesPerDay")}
+                      </label>
+                      <select
+                        value={newItemForm.doses_per_day}
+                        onChange={(e) => updateNewItemField("doses_per_day", e.target.value)}
+                        className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      >
+                        <option value="">--</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="10">10</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                        {t("durationDays")}
+                      </label>
+                      <Input
+                        type="number"
+                        step="1"
+                        min="0"
+                        value={newItemForm.treatment_duration_days}
+                        onChange={(e) => updateNewItemField("treatment_duration_days", e.target.value)}
+                        className="h-10 rounded-lg"
+                        placeholder="0"
+                      />
+                    </div>
+                    {newItemForm.item_type === "medication" && (
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                          {t("totalPills")}
+                        </label>
+                        <Input
+                          type="number"
+                          step="1"
+                          min="0"
+                          value={newItemForm.total_pills_required}
+                          onChange={(e) => updateNewItemField("total_pills_required", e.target.value)}
+                          className="h-10 rounded-lg"
+                          placeholder="0"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Add button */}
+                <Button
+                  onClick={addItem}
+                  disabled={!newItemForm.item_name_complete.trim()}
+                  className="w-full"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  {t("addItem") || "Add item"}
+                </Button>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-3">

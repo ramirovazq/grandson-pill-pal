@@ -272,20 +272,28 @@ describe("PrescriptionForm", () => {
     it("should allow adding a new item", async () => {
       await goToValidationStep();
 
-      const input = screen.getByPlaceholderText(/Add another medication/i);
-      await userEvent.type(input, "Take vitamins daily");
+      // Click on "Add another item..." to open the form
+      const addAnotherButton = screen.getByText(/Add another item/i);
+      await userEvent.click(addAnotherButton);
 
-      // Find the add button by looking for the button with plus icon
-      const allButtons = screen.getAllByRole("button");
-      const addButton = allButtons.find((btn) => 
-        btn.querySelector(".lucide-plus")
-      );
-      expect(addButton).toBeDefined();
-      await userEvent.click(addButton!);
+      // Wait for form to appear, then find all inputs with the description placeholder
+      // The new item form input is the last one
+      await waitFor(() => {
+        expect(screen.getByRole("button", { name: /^Add item$/i })).toBeInTheDocument();
+      });
+      
+      const descriptionInputs = screen.getAllByPlaceholderText(/Omeprazol 20mg/i);
+      const newItemDescriptionInput = descriptionInputs[descriptionInputs.length - 1];
+      await userEvent.type(newItemDescriptionInput, "Take vitamins daily");
+
+      // Click the "Add item" button
+      const addItemButton = screen.getByRole("button", { name: /^Add item$/i });
+      await userEvent.click(addItemButton);
 
       // The text appears in multiple places (label and raw text), so use getAllByText
       const vitaminsTexts = screen.getAllByText(/Take vitamins daily/i);
       expect(vitaminsTexts.length).toBeGreaterThan(0);
+      // Manual items are auto-validated, so we should have 3 checkboxes
       expect(screen.getAllByRole("checkbox").length).toBe(3);
     });
 
