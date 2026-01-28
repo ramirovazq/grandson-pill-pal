@@ -1,0 +1,36 @@
+services:
+  # Monolithic App Service
+  - type: web
+    name: grandson-pill-pal
+    env: docker
+    dockerfilePath: ./Dockerfile.monolith
+    plan: starter  # Free tier might run OOM with Python+Node+Postgres build
+    region: oregon # or frankfurt, etc.
+    
+    # Environment Variables
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false  # User must provide this in dashboard
+      - key: USE_LOCAL_EXTRACTOR
+        value: "true"
+      - key: EXTERNAL_DATABASE
+        value: "false" # Set to "true" if using managed DB
+      # - key: DATABASE_URL
+      #   fromDatabase:
+      #     name: pillpal-db
+      #     property: connectionString
+
+    # Persistence (Disk)
+    # Essential if EXTERNAL_DATABASE is false
+    disk:
+      name: pillpal-data
+      mountPath: /var/lib/postgresql/data
+      sizeGB: 1
+
+# Databases (Optional - Managed Postgres)
+# Uncomment if you prefer a managed database (Recommended for Production)
+# databases:
+#   - name: pillpal-db
+#     plan: free # or starter
+#     databaseName: pillpal
+#     user: pillpal
