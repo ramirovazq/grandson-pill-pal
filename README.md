@@ -101,6 +101,164 @@ AI coding assistants were used to containerize the entire application, ensuring 
 - Docker + Docker Compose
 - PostgreSQL 16
 
+## 5. Front-end implementation
+
+<p align="justify">
+The frontend serves as the primary user interface for the Grandson Pill Pal application. It was designed with a mobile-first approach. The implementation follows modern React patterns and establishes a clear contract with the backend through OpenAPI specifications.
+</p>
+
+### 5.1 Technology Stack
+
+The frontend was built using:
+
+- **React 18 + TypeScript**: Type-safe component development
+- **Vite**: Fast build tool and development server
+- **Tailwind CSS**: Utility-first styling framework
+- **shadcn/ui**: Accessible component library
+- **React Query**: Server state management and API integration
+- **React Router DOM**: Client-side routing
+- **Vitest + React Testing Library**: Comprehensive unit testing
+
+### 5.2 Architecture and Design Patterns
+
+The frontend follows a structured architecture:
+
+```
+frontend/src/
+├── api/              # API client and type definitions (OpenAPI-based)
+├── components/       # Reusable React components
+│   └── ui/          # shadcn/ui components
+├── contexts/        # React Context providers (Language)
+├── hooks/           # Custom React hooks (API integration)
+├── pages/           # Page-level components
+└── lib/             # Utility functions
+```
+
+**Key Design Decisions:**
+
+1. **API Contract First**: All API types (`api/types.ts`) are directly derived from the OpenAPI specification, ensuring frontend-backend alignment
+2. **Component Composition**: Modular components with clear responsibilities
+3. **Context for Global State**: Language preferences managed via React Context
+4. **Custom Hooks for Data**: API integration abstracted into reusable hooks
+
+### 5.3 API Integration via OpenAPI Contract
+
+The frontend strictly adheres to the OpenAPI specification defined in `backend/openapi.yaml`:
+
+**Type Generation:**
+```typescript
+// frontend/src/api/types.ts
+export interface CreatePrescriptionRequest {
+  phone_number: string;
+  items: PrescriptionItemInput[];
+  language?: Language;
+  timezone?: string;
+  recipient_name?: string;
+}
+
+export interface PrescriptionItemInput {
+  text: string;
+  item_type?: ItemType;
+  item_name?: string;
+  item_name_complete?: string;
+  pills_per_dose?: number | null;
+  doses_per_day?: number | null;
+  treatment_duration_days?: number | null;
+  total_pills_required?: number | null;
+  raw_prescription_text?: string;
+  confidence_level?: ConfidenceLevel;
+  requires_human_review?: boolean;
+  schedule?: ReminderSchedule;
+}
+```
+
+**API Client:**
+```typescript
+// frontend/src/api/client.ts
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+export const apiClient = {
+  async createPrescription(data: CreatePrescriptionRequest): Promise<Prescription> {
+    const response = await fetch(`${API_URL}/api/v1/prescriptions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error('Failed to create prescription');
+    return response.json();
+  },
+  // ... other methods
+};
+```
+
+**React Query Integration:**
+```typescript
+// frontend/src/hooks/usePrescriptions.ts
+export function useCreatePrescription() {
+  return useMutation({
+    mutationFn: (data: CreatePrescriptionRequest) => 
+      apiClient.createPrescription(data),
+    onSuccess: () => {
+      // Handle success
+    },
+  });
+}
+```
+
+### 5.4 Key Features Implementation
+
+**Internationalization (i18n)**
+- `LanguageContext` provides translations
+- Support for English and Spanish
+- Dynamic language switching without page reload
+
+**Responsive Design**
+- Mobile-first approach
+- Tailwind responsive utilities (sm:, md:, lg:)
+- Touch-friendly interfaces
+
+**Accessibility**
+- Semantic HTML elements
+- ARIA labels where appropriate
+- Keyboard navigation support
+- Color contrast compliant
+
+**Form Validation**
+- Required field validation
+- Phone number format validation
+- Item validation requirements
+- User feedback via toasts
+
+**AI Integration**
+- Prescription extraction via external microservice
+- Loading states during AI processing
+- Confidence level indicators
+- Debug panel for development/troubleshooting
+
+### 5.5 Build and Deployment
+
+**Development:**
+```bash
+make dev-frontend     # Vite dev server on port 5173
+```
+
+**Production Build:**
+```bash
+make build            # Generates optimized bundle in dist/
+```
+
+**Docker Container:**
+- Frontend served by Nginx
+- Optimized for production with gzip compression
+- SPA routing configured
+- Environment variables for API URLs
+
+**Environment Configuration:**
+```bash
+VITE_API_URL=http://localhost:8000          # Backend API
+VITE_EXTRACTOR_URL=http://localhost:8001    # AI Extractor service
+```
+
 ## Features
 
 - Create prescriptions with multiple medication items

@@ -4,12 +4,14 @@
 
 .PHONY: help install install-frontend install-backend \
         dev dev-frontend dev-backend dev-extractor \
-        test test-all test-frontend test-backend test-extractor test-integration test-watch \
-        build lint clean \
+        test test-all test-frontend test-backend test-extractor test-integration test-watch test-coverage \
+        build lint lint-backend format-backend clean \
         docker-up docker-down docker-build docker-logs docker-logs-extractor \
         docker-logs-backend docker-logs-frontend docker-logs-db docker-ps \
-        docker-dev-up docker-dev-down docker-clean \
-        db-migrate db-upgrade db-downgrade db-history
+        docker-dev-up docker-dev-down docker-clean docker-shell-backend docker-shell-frontend docker-shell-db \
+        docker-restart docker-restart-backend docker-restart-frontend docker-restart-extractor \
+        db-migrate db-upgrade db-downgrade db-history db-connect db-status \
+        env-check preview add-backend-dep add-frontend-dep health-check
 
 # Default target
 help:
@@ -32,6 +34,8 @@ help:
 	@echo "  make db-upgrade       - Apply all pending migrations"
 	@echo "  make db-downgrade     - Rollback the last migration"
 	@echo "  make db-history       - Show migration history"
+	@echo "  make db-connect       - Connect to PostgreSQL database (Docker)"
+	@echo "  make db-status        - Show database connection status"
 	@echo ""
 	@echo "Docker:"
 	@echo "  make docker-up        - Start all services (frontend + backend + extractor + postgres)"
@@ -40,6 +44,13 @@ help:
 	@echo "  make docker-logs      - View logs from all services"
 	@echo "  make docker-logs-extractor - View extractor service logs"
 	@echo "  make docker-ps        - Show running containers"
+	@echo "  make docker-shell-backend  - Open shell in backend container"
+	@echo "  make docker-shell-frontend - Open shell in frontend container"
+	@echo "  make docker-shell-db       - Open shell in database container"
+	@echo "  make docker-restart        - Restart all services"
+	@echo "  make docker-restart-backend   - Restart backend service"
+	@echo "  make docker-restart-frontend  - Restart frontend service"
+	@echo "  make docker-restart-extractor - Restart extractor service"
 	@echo "  make docker-dev-up    - Start development database (postgres only)"
 	@echo "  make docker-dev-down  - Stop development database"
 	@echo ""
@@ -51,13 +62,23 @@ help:
 	@echo "  make test-extractor   - Run extractor service tests"
 	@echo "  make test-integration - Run backend integration tests"
 	@echo "  make test-watch       - Run frontend tests in watch mode"
+	@echo "  make test-coverage    - Run tests with coverage report"
 	@echo ""
 	@echo "Build:"
 	@echo "  make build            - Build frontend for production"
 	@echo "  make build-dev        - Build frontend for development"
+	@echo "  make preview          - Preview production build locally"
 	@echo ""
 	@echo "Code Quality:"
 	@echo "  make lint             - Run linters (frontend)"
+	@echo "  make lint-backend     - Run linters (backend)"
+	@echo "  make format-backend   - Format backend code with ruff"
+	@echo ""
+	@echo "Utilities:"
+	@echo "  make env-check        - Check if required environment variables are set"
+	@echo "  make health-check     - Check health of all services"
+	@echo "  make add-backend-dep  - Add a new backend dependency (prompts)"
+	@echo "  make add-frontend-dep - Add a new frontend dependency (prompts)"
 	@echo ""
 	@echo "Cleanup:"
 	@echo "  make clean            - Remove build artifacts and caches"
@@ -82,6 +103,15 @@ db-downgrade:
 db-history:
 	@echo "📜 Migration history:"
 	cd backend && uv run alembic history --verbose
+
+db-connect:
+	@echo "🔌 Connecting to PostgreSQL database..."
+	@echo "Password: (check .env file)"
+	docker exec -it pillpal-db psql -U pillpal -d pillpal
+
+db-status:
+	@echo "📊 Database connection status:"
+	@docker exec pillpal-db pg_isready -U pillpal || echo "❌ Database not running"
 
 # ============================================================================
 # Installation
@@ -153,6 +183,14 @@ test-watch:
 	@echo "🔄 Running frontend tests in watch mode..."
 	cd frontend && npm run test:watch
 
+test-coverage:
+	@echo "📊 Running tests with coverage..."
+	@echo "Frontend coverage:"
+	cd frontend && npm run test -- --coverage
+	@echo ""
+	@echo "Backend coverage:"
+	cd backend && uv run pytest tests/ --cov=src --cov-report=term-missing
+
 # ============================================================================
 # Build
 # ============================================================================
@@ -172,6 +210,44 @@ build-dev:
 lint:
 	@echo "🔍 Running linters..."
 	cd frontend && npm run lint
+
+lint-backend:
+	@echo "🔍 Running backend linters..."
+	cd backend && uv run ruff check src/ tests/
+
+format-backend:
+	@echo "✨ Formatting backend code..."
+	cd backend && uv run ruff format src/ tests/
+	cd backend && uv run ruff check --fix src/ tests/
+
+# ============================================================================
+# Utilities
+# ============================================================================
+
+env-check:
+	@echo "🔍 Checking environment variables..."
+	@if [ ! -f .env ]; then \
+		echo "❌ .env file not found! Copy .env.example to .env"; \
+		exit 1; \
+	fi
+	@echo "✅ .env file exists"
+	@grep -q "OPENAI_API_KEY" .env && echo "✅ OPENAI_API_KEY is set" || echo "⚠️  OPENAI_API_KEY not set"
+	@grep -q "POSTGRES_PASSWORD" .env && echo "✅ POSTGRES_PASSWORD is set" || echo "⚠️  POSTGRES_PASSWORD not set"
+
+health-check:
+	@echo "🏥 Checking service health..."
+	@echo ""
+	@echo "Backend API:"
+	@curl -f http://localhost:8000/health 2>/dev/null && echo " ✅" || echo " ❌"
+	@echo ""
+	@echo "Extractor Service:"
+	@curl -f http://localhost:8001/health 2>/dev/null && echo " ✅" || echo " ❌"
+	@echo ""
+	@echo "Frontend:"
+	@curl -f http://localhost/ 2>/dev/null > /dev/null && echo " ✅" || echo " ❌"
+	@echo ""
+	@echo "Database:"
+	@docker exec pillpal-db pg_isready -U pillpal 2>/dev/null && echo " ✅" || echo " ❌"
 
 # ============================================================================
 # Cleanup
@@ -233,6 +309,35 @@ docker-logs-db:
 
 docker-ps:
 	docker compose ps
+
+docker-shell-backend:
+	@echo "🐚 Opening shell in backend container..."
+	docker exec -it pillpal-backend /bin/bash
+
+docker-shell-frontend:
+	@echo "🐚 Opening shell in frontend container..."
+	docker exec -it pillpal-frontend /bin/sh
+
+docker-shell-db:
+	@echo "🐚 Opening shell in database container..."
+	docker exec -it pillpal-db /bin/bash
+
+docker-restart:
+	@echo "🔄 Restarting all services..."
+	docker compose restart
+	@echo "✅ All services restarted"
+
+docker-restart-backend:
+	@echo "🔄 Restarting backend service..."
+	docker compose restart backend
+
+docker-restart-frontend:
+	@echo "🔄 Restarting frontend service..."
+	docker compose restart frontend
+
+docker-restart-extractor:
+	@echo "🔄 Restarting extractor service..."
+	docker compose restart extractor
 
 docker-dev-up:
 	@echo "🐳 Starting development database..."
