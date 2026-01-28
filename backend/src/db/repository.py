@@ -41,6 +41,16 @@ class PrescriptionRepository:
             PrescriptionItem(
                 id=UUID(item.id),
                 text=item.text,
+                item_type=item.item_type,
+                item_name=item.item_name,
+                item_name_complete=item.item_name_complete,
+                pills_per_dose=item.pills_per_dose,
+                doses_per_day=item.doses_per_day,
+                treatment_duration_days=item.treatment_duration_days,
+                total_pills_required=item.total_pills_required,
+                raw_prescription_text=item.raw_prescription_text,
+                confidence_level=item.confidence_level,
+                requires_human_review=item.requires_human_review,
                 schedule=self._parse_schedule(item.schedule_times, item.schedule_days),
             )
             for item in model.items
@@ -131,6 +141,16 @@ class PrescriptionRepository:
             times_json, days_json = self._schedule_to_json(item.schedule)
             item_model = PrescriptionItemModel(
                 text=item.text,
+                item_type=item.item_type,
+                item_name=item.item_name,
+                item_name_complete=item.item_name_complete,
+                pills_per_dose=item.pills_per_dose,
+                doses_per_day=item.doses_per_day,
+                treatment_duration_days=item.treatment_duration_days,
+                total_pills_required=item.total_pills_required,
+                raw_prescription_text=item.raw_prescription_text,
+                confidence_level=item.confidence_level,
+                requires_human_review=item.requires_human_review,
                 schedule_times=times_json,
                 schedule_days=days_json,
             )
@@ -262,6 +282,16 @@ class PrescriptionRepository:
                 item_model = PrescriptionItemModel(
                     prescription_id=model.id,
                     text=item.text,
+                    item_type=item.item_type,
+                    item_name=item.item_name,
+                    item_name_complete=item.item_name_complete,
+                    pills_per_dose=item.pills_per_dose,
+                    doses_per_day=item.doses_per_day,
+                    treatment_duration_days=item.treatment_duration_days,
+                    total_pills_required=item.total_pills_required,
+                    raw_prescription_text=item.raw_prescription_text,
+                    confidence_level=item.confidence_level,
+                    requires_human_review=item.requires_human_review,
                     schedule_times=times_json,
                     schedule_days=days_json,
                 )

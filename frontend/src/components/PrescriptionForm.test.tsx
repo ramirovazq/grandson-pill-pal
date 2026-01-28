@@ -423,10 +423,13 @@ describe("PrescriptionForm", () => {
       await userEvent.click(submitButton);
 
       expect(mockOnSubmit).toHaveBeenCalledTimes(1);
-      expect(mockOnSubmit).toHaveBeenCalledWith({
-        items: [{ text: "Take 1 pill" }],
-        phone: "+52 5551234567", // Default country is Mexico (+52)
-      });
+      
+      // Check that onSubmit was called with the expected structure
+      const submitCall = mockOnSubmit.mock.calls[0][0];
+      expect(submitCall.phone).toBe("+52 5551234567"); // Default country is Mexico (+52)
+      expect(submitCall.items).toHaveLength(1);
+      expect(submitCall.items[0].item_name_complete).toBe("Take 1 pill");
+      expect(submitCall.items[0].item_type).toBe("medication");
     });
 
     it("should show validated items summary", async () => {

@@ -15,9 +15,23 @@ export interface ReminderSchedule {
   days_of_week?: number[];
 }
 
+// Item Type
+export type ItemType = "medication" | "food" | "procedure";
+export type ConfidenceLevel = "high" | "medium" | "low";
+
 // Prescription Item Input (for creating/updating)
 export interface PrescriptionItemInput {
   text: string;
+  item_type?: ItemType;
+  item_name?: string;
+  item_name_complete?: string;
+  pills_per_dose?: number | null;
+  doses_per_day?: number | null;
+  treatment_duration_days?: number | null;
+  total_pills_required?: number | null;
+  raw_prescription_text?: string;
+  confidence_level?: ConfidenceLevel;
+  requires_human_review?: boolean;
   schedule?: ReminderSchedule;
 }
 
@@ -25,6 +39,16 @@ export interface PrescriptionItemInput {
 export interface PrescriptionItem {
   id: string;
   text: string;
+  item_type?: ItemType;
+  item_name?: string;
+  item_name_complete?: string;
+  pills_per_dose?: number | null;
+  doses_per_day?: number | null;
+  treatment_duration_days?: number | null;
+  total_pills_required?: number | null;
+  raw_prescription_text?: string;
+  confidence_level?: ConfidenceLevel;
+  requires_human_review?: boolean;
   schedule?: ReminderSchedule;
 }
 

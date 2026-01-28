@@ -192,7 +192,17 @@ const PrescriptionForm = ({ onSubmit, isLoading = false, showDebug = true }: Pre
   const handleSubmit = () => {
     if (phone.trim() && !isLoading) {
       const prescriptionItems: PrescriptionItemInput[] = items.map(item => ({
-        text: item.raw_prescription_text,
+        text: item.item_name_complete || item.raw_prescription_text,
+        item_type: item.item_type,
+        item_name: item.item_name,
+        item_name_complete: item.item_name_complete,
+        pills_per_dose: item.pills_per_dose,
+        doses_per_day: item.doses_per_day,
+        treatment_duration_days: item.treatment_duration_days,
+        total_pills_required: item.total_pills_required,
+        raw_prescription_text: item.raw_prescription_text,
+        confidence_level: item.confidence_level,
+        requires_human_review: item.requires_human_review,
       }));
       // Use full phone number with country code
       onSubmit({ items: prescriptionItems, phone: fullPhoneNumber });

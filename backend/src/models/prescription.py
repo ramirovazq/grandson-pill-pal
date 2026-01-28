@@ -32,6 +32,14 @@ class ReminderSchedule(BaseModel):
     )
 
 
+class ItemType(str, Enum):
+    """Type of prescription item."""
+
+    MEDICATION = "medication"
+    FOOD = "food"
+    PROCEDURE = "procedure"
+
+
 class PrescriptionItemInput(BaseModel):
     """Input model for creating a prescription item."""
 
@@ -41,6 +49,55 @@ class PrescriptionItemInput(BaseModel):
         max_length=500,
         description="Medication instruction text",
         examples=["Take 1 blue pill every morning with food"],
+    )
+    item_type: Optional[str] = Field(
+        default="medication",
+        pattern="^(medication|food|procedure)$",
+        description="Type of item: medication, food, or procedure",
+    )
+    item_name: Optional[str] = Field(
+        default=None,
+        max_length=200,
+        description="Short name of the item (e.g., 'Omeprazol')",
+    )
+    item_name_complete: Optional[str] = Field(
+        default=None,
+        max_length=500,
+        description="Full description (e.g., 'Omeprazol 20mg capsules')",
+    )
+    pills_per_dose: Optional[float] = Field(
+        default=None,
+        ge=0,
+        description="Number of pills per dose",
+    )
+    doses_per_day: Optional[int] = Field(
+        default=None,
+        ge=0,
+        description="Number of doses per day",
+    )
+    treatment_duration_days: Optional[int] = Field(
+        default=None,
+        ge=0,
+        description="Duration of treatment in days",
+    )
+    total_pills_required: Optional[int] = Field(
+        default=None,
+        ge=0,
+        description="Total pills needed for treatment",
+    )
+    raw_prescription_text: Optional[str] = Field(
+        default=None,
+        max_length=1000,
+        description="Original prescription text from AI extraction",
+    )
+    confidence_level: Optional[str] = Field(
+        default=None,
+        pattern="^(high|medium|low)$",
+        description="AI confidence level",
+    )
+    requires_human_review: Optional[bool] = Field(
+        default=False,
+        description="Whether the item needs human verification",
     )
     schedule: Optional[ReminderSchedule] = Field(
         default=None,
@@ -53,6 +110,16 @@ class PrescriptionItem(BaseModel):
 
     id: UUID = Field(..., description="Unique identifier for this item")
     text: str = Field(..., description="Medication instruction text")
+    item_type: Optional[str] = Field(default="medication", description="Type of item")
+    item_name: Optional[str] = Field(default=None, description="Short name")
+    item_name_complete: Optional[str] = Field(default=None, description="Full description")
+    pills_per_dose: Optional[float] = Field(default=None, description="Pills per dose")
+    doses_per_day: Optional[int] = Field(default=None, description="Doses per day")
+    treatment_duration_days: Optional[int] = Field(default=None, description="Duration in days")
+    total_pills_required: Optional[int] = Field(default=None, description="Total pills needed")
+    raw_prescription_text: Optional[str] = Field(default=None, description="Original text")
+    confidence_level: Optional[str] = Field(default=None, description="AI confidence")
+    requires_human_review: Optional[bool] = Field(default=False, description="Needs review")
     schedule: Optional[ReminderSchedule] = Field(
         default=None,
         description="Schedule for this medication",

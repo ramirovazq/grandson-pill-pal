@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from enum import Enum as PyEnum
 from typing import Optional
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String, Text
+from sqlalchemy import DateTime, Enum, Float, ForeignKey, Integer, String, Text, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.db.database import Base
@@ -82,6 +82,14 @@ class PrescriptionModel(Base):
         return f"<Prescription(id={self.id}, phone={self.phone_number}, status={self.status})>"
 
 
+class ItemType(str, PyEnum):
+    """Type of prescription item."""
+
+    MEDICATION = "medication"
+    FOOD = "food"
+    PROCEDURE = "procedure"
+
+
 class PrescriptionItemModel(Base):
     """SQLAlchemy model for prescription items."""
 
@@ -96,7 +104,25 @@ class PrescriptionItemModel(Base):
         nullable=False,
         index=True,
     )
+    
+    # Basic text field (legacy, kept for backwards compatibility)
     text: Mapped[str] = mapped_column(Text, nullable=False)
+    
+    # New detailed fields
+    item_type: Mapped[Optional[str]] = mapped_column(
+        Enum(ItemType), nullable=True, default=ItemType.MEDICATION
+    )
+    item_name: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    item_name_complete: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    pills_per_dose: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    doses_per_day: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    treatment_duration_days: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    total_pills_required: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    raw_prescription_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    confidence_level: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    requires_human_review: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True, default=False)
+    
+    # Schedule fields
     schedule_times: Mapped[Optional[str]] = mapped_column(
         Text, nullable=True
     )  # JSON string of times
@@ -116,7 +142,7 @@ class PrescriptionItemModel(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<PrescriptionItem(id={self.id}, text={self.text[:30]}...)>"
+        return f"<PrescriptionItem(id={self.id}, name={self.item_name or self.text[:30]}...)>"
 
 
 class ReminderModel(Base):
