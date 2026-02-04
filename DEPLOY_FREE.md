@@ -29,32 +29,36 @@ Antes de comenzar, entiende estas limitaciones:
 
 ---
 
-## 🚀 Opción 1: Arquitectura Separada (RECOMENDADA)
+## 🚀 Deploy con Arquitectura Separada (Plan FREE)
 
-Usa `render-free.yaml` - Servicios separados optimizados para free tier.
+El archivo `render.yaml` está configurado con servicios separados optimizados para free tier.
 
-### Ventajas
-- ✅ Mejor uso de recursos (512MB por servicio)
-- ✅ Servicios independientes
-- ✅ Más estable
+### ✅ Ventajas de esta arquitectura
+- Mejor uso de recursos (512MB RAM por servicio)
+- Servicios independientes
+- Más estable que monolito
+- Escalable
 
-### Desventajas
-- ⚠️ 3 servicios = 3 spin downs
-- ⚠️ Más complejo
+### ⚠️ Consideraciones
+- 3 servicios = 3 spin downs después de inactividad
+- Primera carga: ~50 segundos por servicio
 
-### Paso a Paso
+### 📋 Paso a Paso
 
 #### 1. Preparación
 
 ```bash
-# Asegúrate de tener los Dockerfiles
-ls backend/Dockerfile
-ls backend/Dockerfile.extractor
-ls frontend/Dockerfile
+# Asegúrate de tener los Dockerfiles necesarios
+ls backend/Dockerfile              # ✓
+ls backend/Dockerfile.extractor    # ✓
+ls frontend/Dockerfile             # ✓
+
+# Verifica que render.yaml existe
+cat render.yaml
 
 # Commit y push a GitHub
 git add .
-git commit -m "Add Render free tier configuration"
+git commit -m "Add Render deployment configuration"
 git push origin main
 ```
 
@@ -69,104 +73,66 @@ git push origin main
 1. En Render Dashboard, click **"New +"**
 2. Selecciona **"Blueprint"**
 3. Conecta tu repositorio `grandson-pill-pal`
-4. Selecciona el archivo: **`render-free.yaml`**
+4. Render detectará automáticamente `render.yaml`
 5. Click **"Apply"**
+
+Render creará automáticamente:
+- ✅ grandson-pill-pal-backend
+- ✅ grandson-pill-pal-extractor
+- ✅ grandson-pill-pal-frontend
+- ✅ grandson-pill-pal-db (PostgreSQL)
 
 #### 4. Configurar Variables de Entorno
 
-Después del deploy, configura en cada servicio:
+**IMPORTANTE:** Después del deploy inicial, configura tu API key de OpenAI:
 
-**Backend:**
-- `OPENAI_API_KEY`: Tu API key de OpenAI
-- `DATABASE_URL`: (auto-configurado por Render)
-- `CORS_ORIGINS`: URL del frontend
+1. Ve a cada servicio (backend y extractor)
+2. Click en "Environment"
+3. Encuentra `OPENAI_API_KEY`
+4. Agrega tu API key: `sk-proj-xxxxx...`
+5. Save changes
+6. Trigger un nuevo deploy (Manual Deploy)
 
-**Extractor:**
-- `OPENAI_API_KEY`: Tu API key de OpenAI
-- `CORS_ORIGINS`: URL del frontend
+**Backend** necesita:
+- `OPENAI_API_KEY`: ⚠️ REQUERIDO
+- `DATABASE_URL`: ✅ Auto-configurado por Render
+- `CORS_ORIGINS`: ✅ Ya configurado en render.yaml
 
-#### 5. Actualizar Frontend URLs
+**Extractor** necesita:
+- `OPENAI_API_KEY`: ⚠️ REQUERIDO
+- `CORS_ORIGINS`: ✅ Ya configurado en render.yaml
 
-Una vez desplegados backend y extractor, actualiza sus URLs en el frontend:
+**Frontend** necesita:
+- `VITE_API_URL`: ✅ Ya configurado en render.yaml
+- `VITE_EXTRACTOR_URL`: ✅ Ya configurado en render.yaml
 
-1. Ve al servicio frontend en Render
-2. Environment → Add environment variable:
-   ```
-   VITE_API_URL=https://grandson-pill-pal-backend.onrender.com
-   VITE_EXTRACTOR_URL=https://grandson-pill-pal-extractor.onrender.com
-   ```
-3. Trigger un nuevo deploy (Manual Deploy)
-
-#### 6. Verificar Deployment
+#### 5. Verificar Deployment
 
 ```bash
+# Espera ~10 minutos para que todos los servicios se construyan
+
 # Health checks
 curl https://grandson-pill-pal-backend.onrender.com/health
+# Respuesta esperada: {"status":"healthy","timestamp":"..."}
+
 curl https://grandson-pill-pal-extractor.onrender.com/health
+# Respuesta esperada: {"status":"healthy","timestamp":"..."}
 
 # Frontend
 open https://grandson-pill-pal-frontend.onrender.com
 ```
 
----
+#### 6. URLs Finales
 
-## 🚀 Opción 2: Monolítico Simplificado
+Tus servicios estarán disponibles en:
 
-Usa `render.yaml` - Todo en un servicio.
-
-### Ventajas
-- ✅ Más simple (1 solo servicio web)
-- ✅ Solo 1 spin down
-
-### Desventajas
-- ⚠️ 512MB RAM para todo (puede quedarse sin memoria)
-- ⚠️ Menos estable
-- ⚠️ Build más lento
-
-### Requisitos Adicionales
-
-Necesitas crear `Dockerfile.monolith` en la raíz:
-
-```dockerfile
-# Dockerfile.monolith
-FROM python:3.12-slim
-
-# Install Node.js
-RUN apt-get update && apt-get install -y curl
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-RUN apt-get install -y nodejs
-
-WORKDIR /app
-
-# Backend setup
-COPY backend/pyproject.toml backend/uv.lock ./backend/
-RUN pip install uv
-WORKDIR /app/backend
-RUN uv sync --no-dev
-
-# Frontend setup
-WORKDIR /app/frontend
-COPY frontend/package*.json ./
-RUN npm ci
-
-COPY frontend/ ./
-RUN npm run build
-
-# Copy backend code
-WORKDIR /app
-COPY backend/ ./backend/
-
-# Serve frontend with nginx and run backend
-WORKDIR /app
-EXPOSE 8080
-
-# Start script
-COPY start.sh .
-RUN chmod +x start.sh
-CMD ["./start.sh"]
 ```
-
-**NO RECOMENDADO para free tier** - Probablemente exceda 512MB RAM.
+Frontend:      https://grandson-pill-pal-frontend.onrender.com
+Backend API:   https://grandson-pill-pal-backend.onrender.com
+API Docs:      https://grandson-pill-pal-backend.onrender.com/api/v1/docs
+Extractor:     https://grandson-pill-pal-extractor.onrender.com
+Extractor Docs: https://grandson-pill-pal-extractor.onrender.com/docs
+```
 
 ---
 

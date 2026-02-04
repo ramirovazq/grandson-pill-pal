@@ -1,35 +1,70 @@
+# Grandson Pill Pal - Render.com Deployment (FREE TIER)
+# Arquitectura separada optimizada para plan gratuito
+# 
+# Limitaciones del plan FREE:
+# - Services spin down después de 15 min de inactividad
+# - PostgreSQL expira después de 90 días
+# - 512MB RAM por servicio
+# - Sin disco persistente
+#
+# Deploy: Render Dashboard > New > Blueprint > Seleccionar este archivo
+
 services:
-  # Monolithic App Service (FREE TIER)
-  # WARNING: Free tier has 512MB RAM limit - monolith may struggle
+  # Backend API Service
   - type: web
-    name: grandson-pill-pal
+    name: grandson-pill-pal-backend
     env: docker
-    dockerfilePath: ./Dockerfile.monolith
-    plan: free  # FREE TIER (spins down after 15 min inactivity)
+    dockerfilePath: ./backend/Dockerfile
+    plan: free
     region: oregon
     
-    # Environment Variables
     envVars:
-      - key: OPENAI_API_KEY
-        sync: false  # User must provide this in dashboard
-      - key: USE_LOCAL_EXTRACTOR
-        value: "true"
-      - key: EXTERNAL_DATABASE
-        value: "true"  # MUST use external DB (no disk in free tier)
       - key: DATABASE_URL
         fromDatabase:
-          name: pillpal-db
+          name: grandson-pill-pal-db
           property: connectionString
       - key: CORS_ORIGINS
-        value: https://grandson-pill-pal.onrender.com
+        value: https://grandson-pill-pal-frontend.onrender.com
+      - key: OPENAI_API_KEY
+        sync: false  # Configurar en Dashboard después del deploy
+    
+    healthCheckPath: /health
+    
+  # Prescription Extractor Service (AI Microservice)
+  - type: web
+    name: grandson-pill-pal-extractor
+    env: docker
+    dockerfilePath: ./backend/Dockerfile.extractor
+    plan: free
+    region: oregon
+    
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false  # Configurar en Dashboard después del deploy
+      - key: CORS_ORIGINS
+        value: https://grandson-pill-pal-frontend.onrender.com
+    
+    healthCheckPath: /health
+  
+  # Frontend Service (React + Nginx)
+  - type: web
+    name: grandson-pill-pal-frontend
+    env: docker
+    dockerfilePath: ./frontend/Dockerfile
+    plan: free
+    region: oregon
+    
+    # Variables de entorno para el build del frontend
+    envVars:
+      - key: VITE_API_URL
+        value: https://grandson-pill-pal-backend.onrender.com
+      - key: VITE_EXTRACTOR_URL
+        value: https://grandson-pill-pal-extractor.onrender.com
 
-    # NOTE: Disk storage NOT available in free tier
-    # Database must be external (managed PostgreSQL)
-
-# Databases (Managed Postgres - FREE for 90 days)
+# PostgreSQL Database (FREE - Expira después de 90 días)
 databases:
-  - name: pillpal-db
-    plan: free  # FREE TIER (expires after 90 days)
+  - name: grandson-pill-pal-db
+    plan: free
     databaseName: pillpal
     user: pillpal
     region: oregon
