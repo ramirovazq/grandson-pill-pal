@@ -1,0 +1,62 @@
+# Render.com Deployment Configuration (FREE TIER)
+# This configuration uses separate services to stay within free tier limits
+
+services:
+  # Backend API Service
+  - type: web
+    name: grandson-pill-pal-backend
+    env: docker
+    dockerfilePath: ./backend/Dockerfile
+    plan: free  # FREE TIER
+    region: oregon
+    
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: grandson-pill-pal-db
+          property: connectionString
+      - key: CORS_ORIGINS
+        value: https://grandson-pill-pal-frontend.onrender.com
+      - key: OPENAI_API_KEY
+        sync: false  # Set in Render dashboard
+    
+    healthCheckPath: /health
+    
+  # Prescription Extractor Service
+  - type: web
+    name: grandson-pill-pal-extractor
+    env: docker
+    dockerfilePath: ./backend/Dockerfile.extractor
+    plan: free  # FREE TIER
+    region: oregon
+    
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false  # Set in Render dashboard
+      - key: CORS_ORIGINS
+        value: https://grandson-pill-pal-frontend.onrender.com
+    
+    healthCheckPath: /health
+  
+  # Frontend Service
+  - type: web
+    name: grandson-pill-pal-frontend
+    env: docker
+    dockerfilePath: ./frontend/Dockerfile
+    plan: free  # FREE TIER
+    region: oregon
+    
+    # Build arguments for frontend
+    buildCommand: |
+      echo "VITE_API_URL=https://grandson-pill-pal-backend.onrender.com" > .env
+      echo "VITE_EXTRACTOR_URL=https://grandson-pill-pal-extractor.onrender.com" >> .env
+      npm ci
+      npm run build
+
+# PostgreSQL Database (FREE - 90 days)
+databases:
+  - name: grandson-pill-pal-db
+    plan: free  # FREE TIER (expires after 90 days)
+    databaseName: pillpal
+    user: pillpal
+    region: oregon

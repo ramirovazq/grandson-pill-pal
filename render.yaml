@@ -1,11 +1,12 @@
 services:
-  # Monolithic App Service
+  # Monolithic App Service (FREE TIER)
+  # WARNING: Free tier has 512MB RAM limit - monolith may struggle
   - type: web
     name: grandson-pill-pal
     env: docker
     dockerfilePath: ./Dockerfile.monolith
-    plan: starter  # Free tier might run OOM with Python+Node+Postgres build
-    region: oregon # or frankfurt, etc.
+    plan: free  # FREE TIER (spins down after 15 min inactivity)
+    region: oregon
     
     # Environment Variables
     envVars:
@@ -14,23 +15,21 @@ services:
       - key: USE_LOCAL_EXTRACTOR
         value: "true"
       - key: EXTERNAL_DATABASE
-        value: "false" # Set to "true" if using managed DB
-      # - key: DATABASE_URL
-      #   fromDatabase:
-      #     name: pillpal-db
-      #     property: connectionString
+        value: "true"  # MUST use external DB (no disk in free tier)
+      - key: DATABASE_URL
+        fromDatabase:
+          name: pillpal-db
+          property: connectionString
+      - key: CORS_ORIGINS
+        value: https://grandson-pill-pal.onrender.com
 
-    # Persistence (Disk)
-    # Essential if EXTERNAL_DATABASE is false
-    disk:
-      name: pillpal-data
-      mountPath: /var/lib/postgresql/data
-      sizeGB: 1
+    # NOTE: Disk storage NOT available in free tier
+    # Database must be external (managed PostgreSQL)
 
-# Databases (Optional - Managed Postgres)
-# Uncomment if you prefer a managed database (Recommended for Production)
-# databases:
-#   - name: pillpal-db
-#     plan: free # or starter
-#     databaseName: pillpal
-#     user: pillpal
+# Databases (Managed Postgres - FREE for 90 days)
+databases:
+  - name: pillpal-db
+    plan: free  # FREE TIER (expires after 90 days)
+    databaseName: pillpal
+    user: pillpal
+    region: oregon
