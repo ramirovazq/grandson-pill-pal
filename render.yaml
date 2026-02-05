@@ -29,7 +29,7 @@ services:
       - key: OPENAI_API_KEY
         sync: false  # Configurar en Dashboard después del deploy
     
-    healthCheckPath: /health
+    healthCheckPath: /api/v1/health
     
   # Prescription Extractor Service (AI Microservice)
   - type: web
