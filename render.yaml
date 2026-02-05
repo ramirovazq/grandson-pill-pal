@@ -15,6 +15,7 @@ services:
     name: grandson-pill-pal-backend
     env: docker
     dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
     plan: free
     region: oregon
     
@@ -35,6 +36,7 @@ services:
     name: grandson-pill-pal-extractor
     env: docker
     dockerfilePath: ./backend/Dockerfile.extractor
+    dockerContext: ./backend
     plan: free
     region: oregon
     
@@ -51,6 +53,7 @@ services:
     name: grandson-pill-pal-frontend
     env: docker
     dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
     plan: free
     region: oregon
     
