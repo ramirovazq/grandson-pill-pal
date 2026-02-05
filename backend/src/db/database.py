@@ -17,8 +17,9 @@ class Base(DeclarativeBase):
 
 # Create async engine
 # Supports both SQLite (development) and PostgreSQL (production)
+# Uses async_database_url property to handle Render's postgresql:// URLs
 engine = create_async_engine(
-    settings.database_url,
+    settings.async_database_url,
     echo=settings.debug,
     future=True,
 )
@@ -26,7 +27,7 @@ engine = create_async_engine(
 
 # Enable foreign key constraints for SQLite (disabled by default)
 # Only register this listener if using SQLite
-if settings.database_url.startswith("sqlite"):
+if settings.async_database_url.startswith("sqlite"):
     @event.listens_for(engine.sync_engine, "connect")
     def set_sqlite_pragma(dbapi_connection, connection_record):
         """Enable foreign key constraints for SQLite."""

@@ -27,6 +27,23 @@ class Settings(BaseSettings):
     # For SQLite (development): sqlite+aiosqlite:///./pillpal.db
     # For PostgreSQL (production): postgresql+asyncpg://user:pass@host:port/dbname
     database_url: str = "sqlite+aiosqlite:///./pillpal.db"
+    
+    @property
+    def async_database_url(self) -> str:
+        """
+        Get database URL with async driver.
+        Converts Render's postgresql:// to postgresql+asyncpg://
+        """
+        url = self.database_url
+        
+        # If using PostgreSQL without async driver, add it
+        if url.startswith("postgresql://"):
+            return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        elif url.startswith("postgres://"):
+            return url.replace("postgres://", "postgresql+asyncpg://", 1)
+        
+        # SQLite or already has async driver
+        return url
 
     # Twilio settings (for future use)
     twilio_account_sid: str = ""
