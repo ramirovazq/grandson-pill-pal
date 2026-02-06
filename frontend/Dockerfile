@@ -18,9 +18,11 @@ RUN npm ci
 COPY . .
 
 # Build the application
-# Pass the API URL at build time (can be overridden)
+# Pass environment variables at build time (can be overridden)
 ARG VITE_API_URL=/api/v1
+ARG VITE_EXTRACTOR_URL=http://localhost:8001
 ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_EXTRACTOR_URL=$VITE_EXTRACTOR_URL
 
 RUN npm run build
 

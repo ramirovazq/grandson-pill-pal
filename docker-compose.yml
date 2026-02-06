@@ -83,6 +83,7 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_URL: /api/v1
+        VITE_EXTRACTOR_URL: /extractor
     container_name: pillpal-frontend
     restart: unless-stopped
     ports:
