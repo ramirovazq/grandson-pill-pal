@@ -88,6 +88,10 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
+    # Runtime environment variables for entrypoint script
+    environment:
+      VITE_API_URL: /api/v1
+      VITE_EXTRACTOR_URL: /extractor
     # Use nginx config with proxy for Docker Compose
     volumes:
       - ./frontend/nginx-docker-compose.conf:/etc/nginx/conf.d/default.conf:ro

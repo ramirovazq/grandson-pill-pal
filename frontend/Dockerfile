@@ -18,9 +18,9 @@ RUN npm ci
 COPY . .
 
 # Build the application
-# Pass environment variables at build time (can be overridden)
-ARG VITE_API_URL=/api/v1
-ARG VITE_EXTRACTOR_URL=http://localhost:8001
+# Use placeholders that will be replaced at runtime
+ARG VITE_API_URL=__VITE_API_URL__
+ARG VITE_EXTRACTOR_URL=__VITE_EXTRACTOR_URL__
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_EXTRACTOR_URL=$VITE_EXTRACTOR_URL
 
@@ -34,6 +34,10 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy built files from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Copy entrypoint script for runtime env variable injection
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 
 # Create non-root user (nginx already runs as nginx user by default)
 # But we need to adjust permissions
@@ -50,5 +54,5 @@ EXPOSE 80
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:80/ || exit 1
 
-# Run nginx in foreground
-CMD ["nginx", "-g", "daemon off;"]
+# Use custom entrypoint to inject environment variables at runtime
+ENTRYPOINT ["/docker-entrypoint.sh"]

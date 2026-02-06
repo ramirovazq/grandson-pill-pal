@@ -57,10 +57,10 @@ services:
     plan: free
     region: oregon
     
-    # Variables de entorno para el build del frontend
+    # Variables de entorno para el frontend
     envVars:
       - key: VITE_API_URL
-        value: https://grandson-pill-pal-backend.onrender.com
+        value: https://grandson-pill-pal-backend.onrender.com/api/v1
       - key: VITE_EXTRACTOR_URL
         value: https://grandson-pill-pal-extractor.onrender.com
 
