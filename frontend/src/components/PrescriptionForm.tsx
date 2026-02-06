@@ -86,7 +86,7 @@ const countries = [
   { code: "PT", name: "Portugal", dialCode: "+351", flag: "🇵🇹" },
 ];
 
-const PrescriptionForm = ({ onSubmit, isLoading = false, showDebug = true }: PrescriptionFormProps) => {
+const PrescriptionForm = ({ onSubmit, isLoading = false, showDebug = false }: PrescriptionFormProps) => {
   const [step, setStep] = useState<"prescription" | "extracting" | "validate" | "phone">("prescription");
   const [prescription, setPrescription] = useState("");
   const [items, setItems] = useState<ValidatedItem[]>([]);
